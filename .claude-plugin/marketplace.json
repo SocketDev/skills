@@ -1,0 +1,42 @@
+{
+  "name": "socket-skills",
+  "owner": {
+    "name": "Socket"
+  },
+  "metadata": {
+    "description": "Agent Skills for dependency security including vulnerability scanning, package review, patching, firewall configuration, and secure dependency updates via Socket.dev",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "scan",
+      "source": "./skills/scan",
+      "skills": "./",
+      "description": "Scan all packages and dependencies within a repository for vulnerabilities, malware, and supply-chain risks. Covers full project scans across ecosystems (npm, PyPI, Go, Maven, etc.), output interpretation, and CI integration."
+    },
+    {
+      "name": "review",
+      "source": "./skills/review",
+      "skills": "./",
+      "description": "Get detailed security information about a single package. Deep-dive into a specific dependency: vulnerability history, maintainer info, permissions, quality score, license, and transitive deps."
+    },
+    {
+      "name": "patch",
+      "source": "./skills/patch",
+      "skills": "./",
+      "description": "Patch one or more security vulnerabilities and set up patching infrastructure within a repository. Find safe upgrade paths, apply fixes, and configure automated patching workflows."
+    },
+    {
+      "name": "firewall",
+      "source": "./skills/firewall",
+      "skills": "./",
+      "description": "Set up Socket firewall and configure local environment to block malicious packages. Install and configure socket-firewall, manage allow/deny rules, and enforce org policies."
+    },
+    {
+      "name": "update",
+      "source": "./skills/update",
+      "skills": "./",
+      "description": "Update a dependency and propose local code fixes for any breaking changes. Security-audited upgrades with automated code migration suggestions."
+    }
+  ]
+}
