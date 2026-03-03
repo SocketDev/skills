@@ -1,7 +1,9 @@
 {
   "name": "socket-skills",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
+    "prepare": "cp scripts/pre-commit .git/hooks/pre-commit",
     "generate": "./scripts/publish.sh",
     "check": "./scripts/publish.sh --check"
   },

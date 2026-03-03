@@ -1,22 +1,26 @@
-<skills>
+# Socket Security Skills Reference
 
 You have additional SKILLs documented in directories containing a "SKILL.md" file.
 
-These skills are:
+## Available Skills
+
+| Skill | Description |
+|-------|-------------|
 {{#skills}}
- - {{name}} -> "{{path}}/SKILL.md"
+| {{name}} | {{description}} |
 {{/skills}}
 
-IMPORTANT: You MUST read the SKILL.md file whenever the description of the skills matches the user intent, or may help accomplish their task.
+## Usage
 
-<available_skills>
+**IMPORTANT:** You MUST read the SKILL.md file whenever the description of the skills matches the user intent, or may help accomplish their task.
 
-{{#skills}}
-{{name}}: `{{description}}`
-
-{{/skills}}
-</available_skills>
+## Skill Paths
 
 Paths referenced within SKILL folders are relative to that SKILL. For example the scan `scripts/example.sh` would be referenced as `scan/scripts/example.sh`.
 
-</skills>
+## Skill Files
+
+The skills are located in:
+{{#skills}}
+- `{{path}}/SKILL.md`
+{{/skills}}

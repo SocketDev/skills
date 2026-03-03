@@ -3,21 +3,26 @@ name: Validate generated agent/plugin artifacts
 on:
   pull_request:
     paths:
-      - "scripts/AGENTS_TEMPLATE.md"
-      - "scripts/generate-agents.ts"
-      - "scripts/generate-cursor-plugin.ts"
-      - "scripts/publish.sh"
+      - "scripts/**"
       - "**/SKILL.md"
       - "agents/AGENTS.md"
       - "README.md"
-      - ".claude-plugin/marketplace.json"
-      - ".claude-plugin/plugin.json"
+      - "package.json"
+      - ".claude-plugin/**"
       - "gemini-extension.json"
-      - ".cursor-plugin/plugin.json"
+      - ".cursor-plugin/**"
       - ".mcp.json"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "**/SKILL.md"
+      - "package.json"
+      - ".claude-plugin/marketplace.json"
 
 jobs:
   validate:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,7 +34,39 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci || npm install
 
       - name: Ensure generated files are up to date
         run: ./scripts/publish.sh --check
+
+  update:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Regenerate artifacts
+        run: ./scripts/publish.sh
+
+      - name: Commit changes if any
+        run: |
+          git diff --quiet && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add agents/AGENTS.md README.md .cursor-plugin/plugin.json .mcp.json \
+                 .claude-plugin/plugin.json .claude-plugin/marketplace.json \
+                 gemini-extension.json
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: regenerate artifacts [skip ci]"
+          git push

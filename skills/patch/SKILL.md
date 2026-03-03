@@ -73,4 +73,4 @@ issues:
 
 - Always run tests after patching — even patch-level bumps can introduce regressions
 - When a direct fix isn't available, consider using `npm overrides`, `pip` constraints, or Go `replace` directives as temporary mitigations
-- Combine with the `firewall` skill to block vulnerable versions from being re-installed
+- Combine with the `scan` skill to verify the vulnerability is fully resolved after patching

@@ -4,7 +4,7 @@
     "name": "Socket"
   },
   "metadata": {
-    "description": "Agent Skills for dependency security including vulnerability scanning, package review, patching, firewall configuration, and secure dependency updates via Socket.dev",
+    "description": "Agent Skills for dependency security including vulnerability scanning, package review, patching, setup and configuration, and secure dependency updates via Socket.dev",
     "version": "1.0.0"
   },
   "plugins": [
@@ -27,10 +27,10 @@
       "description": "Patch one or more security vulnerabilities and set up patching infrastructure within a repository. Find safe upgrade paths, apply fixes, and configure automated patching workflows."
     },
     {
-      "name": "firewall",
-      "source": "./skills/firewall",
+      "name": "setup",
+      "source": "./skills/setup",
       "skills": "./",
-      "description": "Set up Socket firewall and configure local environment to block malicious packages. Install and configure socket-firewall, manage allow/deny rules, and enforce org policies."
+      "description": "Configure Socket for a project: install the CLI, set up API keys, connect to the Socket dashboard, and verify the integration is working."
     },
     {
       "name": "update",

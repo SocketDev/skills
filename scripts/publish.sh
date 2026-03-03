@@ -9,6 +9,9 @@ GENERATED_FILES=(
   "README.md"
   ".cursor-plugin/plugin.json"
   ".mcp.json"
+  ".claude-plugin/plugin.json"
+  ".claude-plugin/marketplace.json"
+  "gemini-extension.json"
 )
 
 file_sig() {
@@ -21,6 +24,7 @@ file_sig() {
 }
 
 run_generate() {
+  npx tsx scripts/sync-versions.ts
   npx tsx scripts/generate-agents.ts
   npx tsx scripts/generate-cursor-plugin.ts
 }
