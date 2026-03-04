@@ -1,63 +1,82 @@
 ---
 name: scan
-description: Scan all packages and dependencies within a repository for vulnerabilities, malware, and supply-chain risks. Covers full project scans across ecosystems (npm, PyPI, Go, Maven, etc.), output interpretation, and CI integration.
+description: Score packages and dependencies for security, quality, and supply-chain risks using the Socket MCP server's `depscore` tool. Covers extracting dependencies from project manifests and interpreting Socket scores.
 ---
 
 # Scan
 
-Scan all packages and dependencies within a single repository for vulnerabilities, malware, and supply-chain risks using the Socket API.
+Score packages and dependencies for security, quality, and supply-chain risks using the Socket MCP server.
 
 ## When to Use
 
-- The user wants to audit the security posture of an entire project
-- The user needs to identify vulnerable, malicious, or risky dependencies
-- The user wants to integrate dependency scanning into CI/CD pipelines
-- The user asks about known vulnerabilities in their dependency tree
+- The user wants to check the security posture of their project's dependencies
+- The user is adding new dependencies or updating versions and wants to vet them
+- The user wants to evaluate whether a package is safe, well-maintained, or properly licensed
+- The user asks about the quality or risk of packages in their dependency tree
 
 ## How It Works
 
-Socket analyzes package manifests and lock files to identify:
-- **Known vulnerabilities** (CVEs) across all dependency levels
-- **Malware** detected through static and dynamic analysis
-- **Supply-chain risks** such as typosquatting, install scripts, obfuscated code, and protestware
-- **Quality issues** like unmaintained packages, deprecated dependencies, and license risks
+The Socket MCP server exposes a single tool called `depscore`. It accepts an explicit list of packages and returns numeric scores (0–100) across five dimensions for each one. The server does **not** read the filesystem or parse manifests — the agent must extract dependency names and versions from project files and pass them to `depscore`.
 
-## Supported Ecosystems
+### Step-by-Step Workflow
 
-| Ecosystem | Manifest Files |
-|-----------|---------------|
-| npm | `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml` |
-| PyPI | `requirements.txt`, `setup.py`, `pyproject.toml`, `Pipfile.lock` |
-| Go | `go.mod`, `go.sum` |
-| Maven | `pom.xml` |
-| Gradle | `build.gradle`, `build.gradle.kts` |
-| Ruby | `Gemfile`, `Gemfile.lock` |
-| NuGet | `*.csproj`, `packages.config` |
+1. **Read the project's manifest and lock files** to collect dependency names, versions, and ecosystems. Also check source code imports for dependencies that may not appear in manifests.
+2. **Call the `depscore` tool** with the collected packages.
+3. **Interpret the scores** and advise the user on any low-scoring packages.
 
-## Usage
+## The `depscore` Tool
 
-### Full Repository Scan
+### Input
 
-Use the Socket MCP server `scan` tool to scan the current repository. Provide the repository path and optionally filter by ecosystem.
+An array of packages, each with:
 
-### Interpreting Results
+| Parameter   | Type   | Required | Default     | Description                                      |
+|-------------|--------|----------|-------------|--------------------------------------------------|
+| `ecosystem` | string | No       | `"npm"`     | Package ecosystem (e.g., `npm`, `pypi`, `cargo`) |
+| `depname`   | string | Yes      | —           | Package name                                     |
+| `version`   | string | No       | `"unknown"` | Package version; use `"unknown"` if not known     |
 
-Scan results include:
-- **Critical**: Malware, critical CVEs — must be addressed immediately
-- **High**: High-severity CVEs, dangerous install scripts — address before deployment
-- **Medium**: Quality warnings, maintainability concerns — plan remediation
-- **Low**: Informational findings, minor license issues — review at convenience
+### Output
 
-### CI Integration
+One line per package with scores across five dimensions:
 
-To add Socket scanning to CI pipelines:
-1. Add the Socket GitHub App to the repository, or
-2. Use the `socket` CLI in CI scripts with `SOCKET_SECURITY_API_KEY` set
-3. Configure severity thresholds to fail builds on critical/high findings
+```
+pkg:npm/express@4.18.2: supply_chain: 100, quality: 90, maintenance: 100, vulnerability: 100, license: 100
+```
+
+### Score Dimensions
+
+| Dimension      | What It Measures                                                   |
+|----------------|--------------------------------------------------------------------|
+| `supply_chain` | Resistance to supply-chain attacks (typosquatting, install scripts) |
+| `quality`      | Code quality signals                                               |
+| `maintenance`  | Active maintenance, release cadence, responsiveness                |
+| `vulnerability`| Known vulnerabilities (CVEs)                                       |
+| `license`      | License permissiveness and compatibility                           |
+
+Scores range from 0 (worst) to 100 (best). Flag any dimension scoring below ~60 as a concern and ask the user how to proceed.
+
+## Where to Find Dependencies
+
+The agent is responsible for reading these files to extract package lists:
+
+| Ecosystem | Files to Read                                                        |
+|-----------|----------------------------------------------------------------------|
+| npm       | `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`  |
+| PyPI      | `requirements.txt`, `setup.py`, `pyproject.toml`, `Pipfile.lock`    |
+| Go        | `go.mod`, `go.sum`                                                   |
+| Maven     | `pom.xml`                                                            |
+| Gradle    | `build.gradle`, `build.gradle.kts`                                   |
+| Ruby      | `Gemfile`, `Gemfile.lock`                                            |
+| NuGet     | `*.csproj`, `packages.config`                                        |
+| Cargo     | `Cargo.toml`, `Cargo.lock`                                          |
+
+Also scan source code imports — dependencies used in code may not always appear in manifest files.
 
 ## Tips
 
-- Always scan after adding new dependencies or updating lock files
-- Use `--json` output for programmatic processing of results
-- Combine with the `review` skill to deep-dive into specific flagged packages
-- Combine with the `patch` skill to remediate findings
+- Always check dependencies after adding or updating packages
+- Batch all packages into a single `depscore` call rather than one call per package
+- If a version is unknown, pass `"unknown"` — the server will return scores for the latest version
+- Version prefixes like `^` and `~` are automatically stripped
+- Stop generating code and ask the user how to proceed when any scores are low
