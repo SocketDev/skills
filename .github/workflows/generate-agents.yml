@@ -12,6 +12,7 @@ on:
       - "gemini-extension.json"
       - ".cursor-plugin/**"
       - ".mcp.json"
+      - "tests/**"
   push:
     branches: [main]
     paths:
@@ -19,6 +20,21 @@ on:
       - "**/SKILL.md"
       - "package.json"
       - ".claude-plugin/marketplace.json"
+      - "tests/**"
+  workflow_dispatch:
+    inputs:
+      run_e2e:
+        description: "Run E2E tests (Tier 3)"
+        type: boolean
+        default: false
+      test_agent:
+        description: "Agent to use for E2E tests"
+        type: choice
+        options:
+          - claude-code
+          - codex
+          - gemini
+        default: claude-code
 
 jobs:
   validate:
@@ -38,6 +54,63 @@ jobs:
 
       - name: Ensure generated files are up to date
         run: ./scripts/publish.sh --check
+
+      - name: Run structural tests (Tier 1)
+        run: npm run test:structural
+
+  test-mcp:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Run structural tests (Tier 1)
+        run: npm run test:structural
+
+      - name: Run MCP tests (Tier 2)
+        if: env.SOCKET_SECURITY_API_KEY != ''
+        env:
+          SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
+        run: npm run test:mcp
+
+  test-e2e:
+    if: >
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.run_e2e == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        agent: ${{ fromJson(format('["{0}"]', github.event.inputs.test_agent || 'claude-code')) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Run E2E tests (Tier 3)
+        env:
+          RUN_E2E: "1"
+          TEST_AGENT: ${{ matrix.agent }}
+          SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: npm run test:e2e
 
   update:
     if: github.event_name == 'push'

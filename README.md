@@ -90,10 +90,10 @@ This repository contains security-focused skills for dependency management. You 
 | Name | Description | Documentation |
 |------|-------------|---------------|
 | `patch` | Patch one or more security vulnerabilities and set up patching infrastructure within a repository. Find safe upgrade paths, apply fixes, and configure automated patching workflows. | [SKILL.md](skills/patch/SKILL.md) |
-| `review` | Get detailed security information about a single package. Deep-dive into a specific dependency: vulnerability history, maintainer info, permissions, quality score, license, and transitive deps. | [SKILL.md](skills/review/SKILL.md) |
+| `review` | Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches. | [SKILL.md](skills/review/SKILL.md) |
 | `scan` | Scan all packages and dependencies within a repository for vulnerabilities, malware, and supply-chain risks. Covers full project scans across ecosystems (npm, PyPI, Go, Maven, etc.), output interpretation, and CI integration. | [SKILL.md](skills/scan/SKILL.md) |
-| `setup` | Configure Socket for a project: install the CLI, set up API keys, connect to the Socket dashboard, and verify the integration is working. | [SKILL.md](skills/setup/SKILL.md) |
-| `update` | Update a dependency and propose local code fixes for any breaking changes. Security-audited upgrades with automated code migration suggestions. | [SKILL.md](skills/update/SKILL.md) |
+| `setup` | Set up Socket from scratch — install the CLI, authenticate with `socket login`, optionally install the GitHub App, and configure Socket Firewall (free or enterprise). | [SKILL.md](skills/setup/SKILL.md) |
+| `update` | Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration. | [SKILL.md](skills/update/SKILL.md) |
 <!-- END_SKILLS_TABLE -->
 
 ## Contributing

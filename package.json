@@ -5,10 +5,15 @@
   "scripts": {
     "prepare": "cp scripts/pre-commit .git/hooks/pre-commit",
     "generate": "./scripts/publish.sh",
-    "check": "./scripts/publish.sh --check"
+    "check": "./scripts/publish.sh --check",
+    "test": "vitest run --config tests/vitest.config.ts",
+    "test:structural": "vitest run --config tests/vitest.config.ts --include 'tier1-structural/**/*.test.ts'",
+    "test:mcp": "vitest run --config tests/vitest.config.ts --include 'tier2-mcp/**/*.test.ts'",
+    "test:e2e": "RUN_E2E=1 vitest run --config tests/vitest.config.ts --include 'tier3-e2e/**/*.e2e.test.ts'"
   },
   "devDependencies": {
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.18"
   }
 }

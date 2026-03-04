@@ -18,7 +18,7 @@
       "name": "review",
       "source": "./skills/review",
       "skills": "./",
-      "description": "Get detailed security information about a single package. Deep-dive into a specific dependency: vulnerability history, maintainer info, permissions, quality score, license, and transitive deps."
+      "description": "Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches."
     },
     {
       "name": "patch",
@@ -30,13 +30,13 @@
       "name": "setup",
       "source": "./skills/setup",
       "skills": "./",
-      "description": "Configure Socket for a project: install the CLI, set up API keys, connect to the Socket dashboard, and verify the integration is working."
+      "description": "Set up Socket from scratch — install the CLI, authenticate with `socket login`, optionally install the GitHub App, and configure Socket Firewall (free or enterprise)."
     },
     {
       "name": "update",
       "source": "./skills/update",
       "skills": "./",
-      "description": "Update a dependency and propose local code fixes for any breaking changes. Security-audited upgrades with automated code migration suggestions."
+      "description": "Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration."
     }
   ]
 }
