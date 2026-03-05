@@ -31,6 +31,17 @@ npx socket fix --all --no-apply-fixes --json
 
 All `socket fix` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `setup` skill.
 
+## Update Strategy
+
+**Update dependencies one at a time, not in bulk.** When multiple CVEs or vulnerable packages are discovered, apply each fix individually and verify it before moving on. This makes it easy to isolate which upgrade caused a failure and minimizes risk.
+
+- **One dependency per subagent**: Each individual package update (apply, test, fix breakage, commit) **must** run in its own subagent. Updating dependencies produces large diffs, lengthy build output, and verbose test results — doing this in the main context will quickly exhaust the context window. The main agent should only loop over the list of vulnerabilities, dispatch a subagent for each one, and check the result.
+- **Incremental and conservative**: Prefer the smallest version bump that resolves the vulnerability. Start with `--no-major-updates`. Only escalate to a major bump for a specific package if no minor/patch fix exists.
+- **Test after every single update**: After each dependency is updated, the subagent must build the project and run the full test suite before reporting back. Never batch multiple updates without testing in between.
+- **Retry before bailing out**: If an update breaks the build or tests and the breakage cannot be easily fixed, the subagent should revert the change and retry with a different version (e.g., drop `--no-major-updates`, or pin to a specific intermediate version). If no version resolves the issue cleanly, the subagent reports failure.
+- **Bail out on failure**: If a subagent reports that it could not successfully update a dependency after retries, **stop the entire update process**. Do not continue to the next vulnerability. Report which dependency failed, what was tried, and why it failed so the user can intervene. Partially-applied updates that leave the project in a broken state are worse than no update at all.
+- **Commit on success**: After each individual update passes all tests, the subagent commits the change so that progress is preserved and any future failure can be cleanly reverted without losing prior work.
+
 ## Update Workflow
 
 ### 1. Discover Vulnerable Dependencies
@@ -57,27 +68,26 @@ CVE IDs and PURLs are automatically converted to GHSA IDs.
 
 Review the dry-run output to understand which packages will be upgraded and to what versions.
 
-### 2. Apply the Fixes
+### 2. Apply Fixes One at a Time
 
-Once you understand what will change, apply the upgrades:
+Once you understand what will change from the dry run, apply upgrades **one vulnerability at a time**. The main agent loops over the vulnerability list and dispatches a subagent for each one. This is critical — each update produces large diffs, build logs, and test output that would rapidly exhaust the main context window.
 
-**Apply all fixes (conservative — no major version bumps):**
+**For each vulnerability from the dry-run output, the main agent spawns a subagent that:**
 
-```
-socket fix --all --no-major-updates
-```
+1. Applies the single targeted fix:
+   ```
+   socket fix --id GHSA-xxxx-xxxx-xxxx --no-major-updates
+   ```
+2. Builds the project and runs the full test suite
+3. If tests pass, commits the change and reports success back to the main agent
+4. If tests fail:
+   - Attempts to fix breaking changes in code
+   - If the breakage is not easily fixable, reverts the update and retries with an alternative version (e.g., drop `--no-major-updates`, or pin to a specific intermediate version with `--range-style pin`)
+   - If no version resolves the issue cleanly, reverts all changes and reports failure back to the main agent
 
-**Apply all fixes (including major version bumps):**
+**When a subagent reports failure, the main agent must stop.** Do not continue to the next vulnerability. Report the failure to the user with details on what was tried and why it failed.
 
-```
-socket fix --all
-```
-
-**Apply a targeted fix:**
-
-```
-socket fix --id GHSA-xxxx-xxxx-xxxx
-```
+**Do NOT use `socket fix --all` to apply everything at once.** Always target individual vulnerabilities so each change can be independently verified.
 
 **Useful flags:**
 
@@ -128,26 +138,35 @@ If tests fail after fixing, investigate each failure:
 
 ## Example
 
-Fixing all vulnerabilities in a Node.js project:
+Fixing all vulnerabilities in a Node.js project (success case):
 
 1. Dry run to discover issues: `socket fix --all --no-apply-fixes --json`
 2. Review output — 3 GHSAs found affecting `lodash`, `express`, and `semver`
-3. Apply conservative fixes: `socket fix --all --no-major-updates`
-4. `lodash` and `semver` patched (minor bumps), `express` skipped (requires major bump)
-5. Run tests — all pass. No breaking changes from minor bumps.
-6. Apply remaining fix: `socket fix --id GHSA-xxxx-xxxx-xxxx` (the `express` major bump)
-7. Check Express migration guide for breaking changes
-8. Update middleware signatures and route syntax in application code
-9. Run tests — 2 failures in route tests
-10. Fix route handler code to match new Express API
-11. Run tests — all pass
-12. Run `scan` skill — no new vulnerabilities
+3. **Subagent 1 — lodash**: `socket fix --id GHSA-aaaa-aaaa-aaaa --no-major-updates` → minor bump applied → tests pass → commit → reports success
+4. **Subagent 2 — semver**: `socket fix --id GHSA-bbbb-bbbb-bbbb --no-major-updates` → patch applied → tests pass → commit → reports success
+5. **Subagent 3 — express**: `socket fix --id GHSA-cccc-cccc-cccc --no-major-updates` → no fix available without major bump
+   - Retry: `socket fix --id GHSA-cccc-cccc-cccc` (allow major bump)
+   - Major bump applied → 2 test failures in route tests
+   - Fix route handler code to match new Express API
+   - Tests pass → commit → reports success
+6. All subagents succeeded → run `scan` skill → no new vulnerabilities
+
+Failure case — main agent stops on first failure:
+
+1. Dry run: 3 GHSAs found affecting `lodash`, `ws`, and `semver`
+2. **Subagent 1 — lodash**: patch applied → tests pass → commit → reports success
+3. **Subagent 2 — ws**: tried `--no-major-updates` (no fix), tried major bump (tests fail, code migration too complex), reverted → reports failure
+4. **Main agent stops.** Reports to user: "ws (GHSA-yyyy-yyyy-yyyy) could not be updated. Tried minor/patch (no fix available) and major bump v7→v8 (broke WebSocket handshake tests, migration not straightforward). lodash was successfully updated. semver was not attempted."
 
 ## Tips
 
 - Start with `--no-apply-fixes --json` to preview changes before modifying files
-- Use `--no-major-updates` first to apply safe patches, then handle major bumps separately
-- Apply fixes one vulnerability at a time for easier debugging when breaking changes occur
+- Use `--no-major-updates` first for each fix, then escalate to major bumps only if needed
+- **Always apply fixes one vulnerability at a time** — never batch updates without testing between them
+- **Run each update pass as a subagent** — this is mandatory to prevent context window exhaustion from build output, diffs, and test results
+- **If an update breaks tests**, the subagent should try alternative versions (revert, try a different minor/patch, try with/without `--no-major-updates`) before reporting failure
+- **Stop on failure** — if any single update cannot be completed, halt the entire process and report to the user rather than continuing with a broken state
+- Commit after each successful update so progress is saved and failures can be cleanly reverted
 - Use `--minimum-release-age 2d` to avoid upgrading to freshly-published versions
 - Combine with the `review` skill to compare security profiles before and after upgrades
 - After all fixes are applied, run the `scan` skill to verify no new risks were introduced

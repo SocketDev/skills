@@ -12,7 +12,7 @@
       "name": "scan",
       "source": "./skills/scan",
       "skills": "./",
-      "description": "Scan all packages and dependencies within a repository for vulnerabilities, malware, and supply-chain risks. Covers full project scans across ecosystems (npm, PyPI, Go, Maven, etc.), output interpretation, and CI integration."
+      "description": "Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, and performs Tier 1 reachability analysis for enterprise customers."
     },
     {
       "name": "review",
@@ -30,13 +30,19 @@
       "name": "setup",
       "source": "./skills/setup",
       "skills": "./",
-      "description": "Set up Socket from scratch — install the CLI, authenticate with `socket login`, optionally install the GitHub App, and configure Socket Firewall (free or enterprise)."
+      "description": "Set up Socket — prompt for API key, install the CLI, authenticate, configure CI/CD for firewall or patch modes across GitHub, GitLab, Bitbucket, and other systems."
     },
     {
       "name": "update",
       "source": "./skills/update",
       "skills": "./",
       "description": "Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration."
+    },
+    {
+      "name": "cleanup",
+      "source": "./skills/cleanup",
+      "skills": "./",
+      "description": "Find and remove unused dependencies from your project. Scans the codebase for import and usage patterns across npm, PyPI, Cargo, Bundler, Maven, NuGet, Go, pnpm, and Yarn to identify dependencies that are no longer referenced."
     }
   ]
 }

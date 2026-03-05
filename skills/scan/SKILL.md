@@ -1,82 +1,117 @@
 ---
 name: scan
-description: Score packages and dependencies for security, quality, and supply-chain risks using the Socket MCP server's `depscore` tool. Covers extracting dependencies from project manifests and interpreting Socket scores.
+description: Run a full dependency scan using the Socket CLI. Creates a scan in the
+  Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks,
+  and performs Tier 1 reachability analysis for enterprise customers.
 ---
 
 # Scan
 
-Score packages and dependencies for security, quality, and supply-chain risks using the Socket MCP server.
+Run a full dependency scan using the Socket CLI. Automatically discovers all project dependencies, checks them for vulnerabilities and supply-chain risks, creates a scan visible in the Socket dashboard, and performs Tier 1 reachability analysis for enterprise customers.
 
 ## When to Use
 
-- The user wants to check the security posture of their project's dependencies
-- The user is adding new dependencies or updating versions and wants to vet them
-- The user wants to evaluate whether a package is safe, well-maintained, or properly licensed
-- The user asks about the quality or risk of packages in their dependency tree
+- The user wants to scan their project's dependencies for vulnerabilities or supply-chain risks
+- The user wants to create a scan visible in the Socket dashboard
+- The user wants reachability analysis to determine if vulnerabilities are actually exploitable in their code
+- The user is adding or updating dependencies and wants to verify security posture
+- The user asks for a full security audit of their dependency tree
+- The user wants to check for malware in their dependencies
 
-## How It Works
+## Prerequisites
 
-The Socket MCP server exposes a single tool called `depscore`. It accepts an explicit list of packages and returns numeric scores (0–100) across five dimensions for each one. The server does **not** read the filesystem or parse manifests — the agent must extract dependency names and versions from project files and pass them to `depscore`.
-
-### Step-by-Step Workflow
-
-1. **Read the project's manifest and lock files** to collect dependency names, versions, and ecosystems. Also check source code imports for dependencies that may not appear in manifests.
-2. **Call the `depscore` tool** with the collected packages.
-3. **Interpret the scores** and advise the user on any low-scoring packages.
-
-## The `depscore` Tool
-
-### Input
-
-An array of packages, each with:
-
-| Parameter   | Type   | Required | Default     | Description                                      |
-|-------------|--------|----------|-------------|--------------------------------------------------|
-| `ecosystem` | string | No       | `"npm"`     | Package ecosystem (e.g., `npm`, `pypi`, `cargo`) |
-| `depname`   | string | Yes      | —           | Package name                                     |
-| `version`   | string | No       | `"unknown"` | Package version; use `"unknown"` if not known     |
-
-### Output
-
-One line per package with scores across five dimensions:
+The Socket CLI must be installed and authenticated. Verify readiness:
 
 ```
-pkg:npm/express@4.18.2: supply_chain: 100, quality: 90, maintenance: 100, vulnerability: 100, license: 100
+socket --version
 ```
 
-### Score Dimensions
+If `socket` is not installed globally, use `npx` to run it without installing:
 
-| Dimension      | What It Measures                                                   |
-|----------------|--------------------------------------------------------------------|
-| `supply_chain` | Resistance to supply-chain attacks (typosquatting, install scripts) |
-| `quality`      | Code quality signals                                               |
-| `maintenance`  | Active maintenance, release cadence, responsiveness                |
-| `vulnerability`| Known vulnerabilities (CVEs)                                       |
-| `license`      | License permissiveness and compatibility                           |
+```
+npx socket scan create --repo . --json
+```
 
-Scores range from 0 (worst) to 100 (best). Flag any dimension scoring below ~60 as a concern and ask the user how to proceed.
+All `socket` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `setup` skill.
 
-## Where to Find Dependencies
+For enterprise features (reachability analysis), authentication is required via `socket login` or the `SOCKET_CLI_API_TOKEN` environment variable. Verify with:
 
-The agent is responsible for reading these files to extract package lists:
+```
+socket organization list
+```
 
-| Ecosystem | Files to Read                                                        |
-|-----------|----------------------------------------------------------------------|
-| npm       | `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`  |
-| PyPI      | `requirements.txt`, `setup.py`, `pyproject.toml`, `Pipfile.lock`    |
-| Go        | `go.mod`, `go.sum`                                                   |
-| Maven     | `pom.xml`                                                            |
-| Gradle    | `build.gradle`, `build.gradle.kts`                                   |
-| Ruby      | `Gemfile`, `Gemfile.lock`                                            |
-| NuGet     | `*.csproj`, `packages.config`                                        |
-| Cargo     | `Cargo.toml`, `Cargo.lock`                                          |
+## Scan Workflow
 
-Also scan source code imports — dependencies used in code may not always appear in manifest files.
+### 1. Create a Full Scan
+
+Run a full dependency scan on the current repository:
+
+```
+socket scan create --repo . --json
+```
+
+The CLI automatically discovers and parses all manifest and lock files in the repository — no need to manually extract dependencies. The scan is uploaded to the Socket dashboard where results can be viewed and shared.
+
+**For enterprise customers**, specify the organization to associate the scan:
+
+```
+socket scan create --repo . --org <org-slug> --json
+```
+
+**Flags:**
+
+| Flag | Purpose |
+|---|---|
+| `--repo <path>` | Path to the repository to scan (use `.` for current directory) |
+| `--org <org-slug>` | Organization slug for enterprise scans |
+| `--json` | Output results as JSON for easier parsing |
+| `--branch <name>` | Associate the scan with a specific branch |
+| `--commit <sha>` | Associate the scan with a specific commit |
+
+### 2. Interpret Results
+
+Triage alerts by severity:
+
+- **Critical / High severity**: Stop and report these to the user immediately. These represent known vulnerabilities with available exploits or severe supply-chain risks that require urgent attention.
+- **Malware**: If any package is flagged as malware, display a prominent warning. Malware findings should be treated as the highest priority — advise the user to remove the package immediately.
+- **Medium / Low severity**: Summarize these for the user. Group by category (vulnerability, quality, maintenance, license) and provide a brief overview rather than listing each one individually.
+
+### 3. Reachability Analysis (Enterprise Only)
+
+For enterprise customers, run Tier 1 reachability analysis to determine whether vulnerabilities are actually reachable in the project's code:
+
+```
+socket scan reach --org <org-slug> .
+```
+
+This analyzes the project's dependency graph and source code to classify each vulnerability by reachability:
+
+| Reachability | Meaning | Effective Priority |
+|---|---|---|
+| `reachable` | Vulnerable code path is exercised by the project | Critical — fix immediately |
+| `unreachable` | Vulnerable code path is not used | Low — deprioritize |
+| `unknown` | Reachability could not be determined | High — treat as potentially reachable |
+| `not_applicable` | Vulnerability does not apply to this context | Filter out |
+
+Reachability analysis generates a `.socket.facts.json` file in the project root with detailed findings. This helps prioritize which vulnerabilities to fix first — focus effort on `reachable` issues rather than wasting time on `unreachable` ones.
+
+**Skip this step entirely for free-tier users** — reachability analysis requires an enterprise subscription with an authenticated organization.
+
+### 4. Act on Findings
+
+Based on scan results, cross-reference other skills to resolve issues:
+
+- **Vulnerabilities with available fixes** — use the `/update` skill to apply safe upgrades
+- **Packages needing deeper investigation** — use the `/review` skill to research specific packages
+- **Packages with Socket patches available** — use the `/patch` skill to apply security patches
+- **Unused dependencies** — use the `/cleanup` skill to remove packages that are no longer needed
 
 ## Tips
 
-- Always check dependencies after adding or updating packages
-- Batch all packages into a single `depscore` call rather than one call per package
-- If a version is unknown, pass `"unknown"` — the server will return scores for the latest version
-- Version prefixes like `^` and `~` are automatically stripped
-- Stop generating code and ask the user how to proceed when any scores are low
+- Always run a scan after adding, updating, or removing dependencies to verify the project's security posture
+- Use `--json` for machine-readable output that is easier to parse and summarize
+- Combine with the `review` skill for deep-dives into specific flagged packages
+- Combine with the `update` skill to fix vulnerabilities discovered during the scan
+- Enterprise customers should use reachability analysis to prioritize fixes — focus on `reachable` vulnerabilities first
+- Scan results are available in the Socket dashboard for team visibility and historical tracking
+- If `socket` is not installed, `npx socket` works as a drop-in replacement for all commands

@@ -1,159 +1,182 @@
 ---
 name: setup
-description: Set up Socket from scratch — install the CLI (`socket`), authenticate with `socket login`, optionally install the GitHub App, and configure Socket Firewall (free or enterprise).
+description: Set up Socket — prompt for API key, install the CLI, authenticate,
+  configure CI/CD for firewall or patch modes across GitHub, GitLab, Bitbucket,
+  and other systems.
 ---
 
 # Setup
 
-Set up Socket from scratch by installing the CLI, authenticating, connecting to GitHub, and configuring Socket Firewall.
-
 ## When to Use
+- User wants to get started with Socket
+- User needs to install/configure the Socket CLI
+- User wants to authenticate with Socket
+- User wants to set up Socket Firewall
+- User wants to set up socket-patch for automated patching
+- User wants to add Socket to CI/CD pipelines
+- User is having trouble authenticating
 
-- The user wants to get started with Socket in a new project
-- The user needs to install or configure the Socket CLI
-- The user wants to authenticate with Socket
-- The user asks how to connect their project to the Socket dashboard
-- The user wants to set up Socket Firewall for dependency protection
-- The user is having trouble authenticating with Socket
+## Step 1: Prompt for API Key
+- Ask: do you want the **free** tier or **enterprise** tier?
+- Free: no API key needed (free firewall, socket-patch apply)
+- Enterprise: collect API key or guide to socket.dev to create one
+  - Sign in: https://socket.dev/auth/login
+  - Token page: https://socket.dev/dashboard/org/{ORG}/settings/integrations/api-tokens
+- Store the tier choice for subsequent steps
 
-## Step 1: Install the CLI
+## Step 2: Install the CLI
+- Prerequisites: Node.js 18+
+- npm install -g socket
+- Verify: socket --version
+- PATH troubleshooting
 
-### Prerequisites
+## Step 3: Authenticate (Enterprise only)
+- Interactive: socket login
+- Manual token: SOCKET_CLI_API_TOKEN env var
+- Verify: socket organization list
+- Skip entirely for free tier
 
-- Node.js 18+ installed
+## Step 4: Ask What to Set Up
+- Ask the user: do you want to set up **Firewall**, **Patches**, or **both**?
+- Route to the appropriate section(s) below
 
-### Install
+## Step 5: Detect SCM and CI System
+- Run `git remote -v` to detect the SCM:
+  - github.com → GitHub
+  - gitlab.com or self-hosted GitLab → GitLab
+  - bitbucket.org → Bitbucket
+  - Other / not a git repo → Generic
+- Based on SCM, infer the likely CI system, but also check for:
+  - .github/workflows/ → GitHub Actions
+  - .gitlab-ci.yml → GitLab CI
+  - bitbucket-pipelines.yml → Bitbucket Pipelines
+  - Jenkinsfile → Jenkins
+  - .circleci/config.yml → CircleCI
+  - .travis.yml → Travis CI
+  - azure-pipelines.yml → Azure Pipelines
+  - None found → Generic / manual
 
-```bash
-npm install -g socket
-```
+## Firewall Setup
 
-### Verify Installation
+### GitHub Actions
+- Use SocketDev/action@v1
+- Free tier: mode: firewall-free (no socket-token needed)
+- Enterprise: mode: firewall, socket-token: ${{ secrets.SOCKET_API_KEY }}
+- Insert after actions/checkout, before install steps
+- Prefix install commands with sfw (sfw npm install, sfw pip install, etc.)
+- Guide user to set up GitHub secret if enterprise
+- If GitHub: also offer to install the Socket Security GitHub App
+  (github.com/apps/socket-security) for automatic PR scanning
 
-```bash
-socket --version
-```
+### GitLab CI
+- Add a before_script or dedicated stage to install sfw
+- Install: curl standalone binary or npm install -g sfw
+- Prefix install commands with sfw
+- Enterprise: set SOCKET_CLI_API_TOKEN as CI/CD variable in GitLab settings
 
-If `socket` is not found, ensure the npm global bin directory is on your PATH:
+### Bitbucket Pipelines
+- Add pipe step to install sfw binary
+- Prefix install commands with sfw
+- Enterprise: set SOCKET_CLI_API_TOKEN as repository variable
 
-```bash
-npm bin -g
-```
+### Generic CI/CD
+- Download sfw binary via curl/wget
+- Prefix install commands with sfw
+- Set SOCKET_CLI_API_TOKEN as env var for enterprise
 
-## Step 2: Authenticate
+### Local Development
+- npm install -g sfw (or standalone binary)
+- Usage: sfw npm install, sfw pip install, etc.
 
-### Interactive Login (Recommended)
+## Sub-Skill: Patch Setup
 
-Run `socket login` to authenticate interactively. This handles token input, org selection, and persists credentials to your local config:
+### When to Use (Patch Sub-Skill)
+- User wants to set up socket-patch
+- User wants to apply security patches in CI
+- User wants postinstall hooks for automatic patching
 
-```bash
-socket login
-```
+### P1: Install socket-patch
+- npm: npx @socketsecurity/socket-patch (one-off) or npm install -g @socketsecurity/socket-patch
+- pip: pip install socket-patch
+- cargo: cargo install socket-patch-cli
+- Standalone: curl installer from socket-patch repo
+- No API key required for socket-patch apply
 
-### Manual Token Setup
+### P2: Generic Agent — Scan Codebase for Install/Build Locations
+The agent must comprehensively scan the project to find ALL places where
+dependencies are installed and builds happen:
 
-If interactive login is not available (e.g. headless environments):
+| Location | What to Look For |
+|----------|-----------------|
+| package.json scripts | install, postinstall, build, prebuild |
+| CI configs (all formats) | install steps, build steps |
+| Makefile / Justfile | install and build targets |
+| Dockerfile / docker-compose | RUN install, RUN build layers |
+| Shell scripts (*.sh) | install/build commands |
+| pyproject.toml / setup.py | build system config |
+| Cargo.toml | build scripts |
 
-1. Sign in at [socket.dev/auth/login](https://socket.dev/auth/login)
-2. Navigate to your org's API token page: `https://socket.dev/dashboard/org/{ORG}/settings/integrations/api-tokens`
-3. Generate a new token
+For each location, record:
+- File path
+- The install command/step
+- The build command/step
+- Where to insert socket-patch apply (after install, before build)
 
-### CI Environments
+Present findings to user before making changes.
 
-Set the `SOCKET_CLI_API_TOKEN` environment variable:
+### P3: GitHub Actions (Preferred for GitHub repos)
+- Use SocketDev/action@v1 with mode: patch
+  ```yaml
+  - uses: SocketDev/action@v1
+    with:
+      mode: patch
+      # patch-ecosystems: npm,pypi  (optional)
+      # patch-dry-run: false        (optional)
+  ```
+- Place after checkout, before install
+  (binary is available when npm postinstall hooks run)
+- No socket-token needed for patch mode
 
-```bash
-export SOCKET_CLI_API_TOKEN="your-token-here"
-```
+### P4: GitLab CI
+- Add stage/step to install socket-patch binary
+- Add socket-patch apply step after install, before build
+- Example .gitlab-ci.yml snippet
 
-For GitHub Actions:
+### P5: Bitbucket Pipelines
+- Add step to install socket-patch binary
+- Add socket-patch apply step after install, before build
+- Example bitbucket-pipelines.yml snippet
 
-```yaml
-env:
-  SOCKET_CLI_API_TOKEN: ${{ secrets.SOCKET_CLI_API_TOKEN }}
-```
+### P6: Other CI/CD Systems (Jenkins, CircleCI, Travis, Azure, etc.)
+- Install socket-patch binary via curl/npm
+- Add socket-patch apply step after install, before build
+- Generic pattern applicable to any CI system
 
-### Verify Authentication
+### P7: Local Development / npm Projects
+- Run socket-patch setup to add postinstall hook to package.json
+- This auto-adds "postinstall": "socket-patch apply"
+- Works for any npm project regardless of CI system
 
-```bash
-socket organization list
-```
+### P8: Generic Fallback
+If the agent cannot determine the CI/CD system or the project uses
+an unusual build system:
+- Identify the project's install and build commands by reading all
+  config files, scripts, and documentation
+- Insert socket-patch apply at the appropriate point
+- For interpreted projects (Python, Ruby): add after pip install / bundle install
+- For compiled projects (Rust, Go, Java): add after dependency fetch, before compile
+- For containers: add RUN socket-patch apply layer after install layer
 
-This should display your organizations and confirm credentials are valid.
-
-## Step 3: GitHub App (Optional)
-
-Check if the current project uses GitHub as its remote:
-
-```bash
-git remote -v
-```
-
-If the remote points to GitHub, ask the user whether they want to install the Socket Security GitHub App. The app automatically scans pull requests for dependency risks.
-
-Install at: [github.com/apps/socket-security](https://github.com/apps/socket-security)
-
-Skip this step if the project is not hosted on GitHub or the user declines.
-
-## Step 4: Socket Firewall
-
-Ask the user whether they want to set up the **free** or **enterprise** Socket Firewall.
-
-### Free (`sfw`)
-
-A zero-config firewall that blocks malicious and risky packages at install time. No Socket account required.
-
-#### Install
-
-```bash
-npm install -g sfw
-```
-
-Or download a standalone binary from [github.com/SocketDev/sfw-free/releases](https://github.com/SocketDev/sfw-free/releases).
-
-#### Usage
-
-Prefix `sfw` before any package manager command:
-
-```bash
-sfw npm install
-sfw yarn add express
-sfw pnpm install
-sfw pip install requests
-sfw uv pip install flask
-sfw cargo add serde
-```
-
-Supported package managers: npm, yarn, pnpm, pip, uv, cargo.
-
-#### CI Integration
-
-Use the `socketdev/action@v1` GitHub Action with `mode: firewall`:
-
-```yaml
-- uses: socketdev/action@v1
-  with:
-    mode: firewall
-```
-
-### Enterprise
-
-Enterprise Firewall requires authentication from Step 2 and provides advanced protections.
-
-Additional capabilities beyond the free tier:
-
-- **More ecosystems**: Go, Java, Ruby, .NET in addition to npm/yarn/pnpm/pip/uv/cargo
-- **Service mode**: Persistent proxy that protects all package installs system-wide
-- **Configurable policies**: Customize which risk categories to block or warn on
-- **Private registry support**: Works with private npm registries, Artifactory, etc.
-- **Allow-listing**: Approve specific packages that trigger policy rules
-- **Dashboard integration**: View blocked installs and policy events in the Socket dashboard
-- **Offline operation**: Cache policies for air-gapped environments
-
-Refer to the Socket documentation for enterprise setup instructions.
+### P9: Verify
+- socket-patch apply --dry-run
+- Run the build
+- Check .socket/manifest.json is committed
 
 ## Tips
-
-- Never commit API tokens to the repository. Use `socket login` for local development and `SOCKET_CLI_API_TOKEN` as a CI secret.
-- After setup, use the `scan` skill to run your first security audit and the `review` skill to inspect individual packages.
-- If `socket login` fails, check your network connection and ensure you can reach `https://socket.dev`. Try `socket login --help` for additional options.
+- Never commit API tokens. Use socket login locally, env vars in CI.
+- socket-patch apply does not require an API key.
+- Use SocketDev/action@v1 (correct casing) in GitHub workflow files.
+- For monorepos, use patch-cwd to target specific directories.
+- After setup, use scan skill for first audit, review skill for package inspection.
+- For GitHub repos, consider also installing the Socket Security GitHub App
+  for automatic PR scanning.
