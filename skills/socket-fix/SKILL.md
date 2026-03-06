@@ -19,6 +19,21 @@ This skill is an **orchestrator**. It does not have its own tools — it delegat
 - The user asks for a safe or conservative dependency repair
 - The user wants to progressively increase aggressiveness (start safe, escalate if needed)
 
+## Prerequisites
+
+This orchestrator delegates to sub-skills with mixed authentication requirements:
+
+- `/socket-dep-cleanup` — **NO** account required
+- `/socket-dep-patch` (`socket-patch apply`) — **NO** account required
+- `/socket-dep-upgrade` (`socket fix`, `socket scan create`) — **account REQUIRED**
+- `/socket-dep-replace` (`socket fix`, `socket scan create`) — **account REQUIRED**
+
+**Without a Socket account**, only Level 1 (Conservative) is fully available, as it uses only cleanup and patches. Levels 2 and 3 use `socket fix` for vulnerability discovery and upgrades, which requires authentication.
+
+If the user does not have a Socket account and requests Level 2 or 3, explain the limitation and either:
+- Help them create an account at https://socket.dev, then proceed
+- Fall back to Level 1 (cleanup + patches only)
+
 ## Step 1: Detect Environment
 
 Before any repair work, identify the project's ecosystem and dependency landscape.
@@ -26,6 +41,7 @@ Before any repair work, identify the project's ecosystem and dependency landscap
 1. **Detect ecosystems** — check for manifest and lock files (`package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, etc.) to determine which package managers are in use
 2. **Parse dependencies** — read manifest files to build a list of all direct dependencies (production and dev)
 3. **Detect CI** — check for CI/CD configuration (`.github/workflows/`, `.gitlab-ci.yml`, `bitbucket-pipelines.yml`, etc.) to understand the project's build and test infrastructure
+4. **Ensure dependencies are installed** — check for the presence of the dependency directory (`node_modules/`, `vendor/`, etc.). If dependencies are not installed, run the project's install command using the detected package manager (e.g. `npm install`, `pnpm install`, `bun install`). This is required for both patching (Phase 1b) and accurate unused dependency detection (Phase 1a).
 
 Report a brief summary:
 
@@ -36,6 +52,7 @@ Environment detected:
   CI: GitHub Actions (Node 18/20 matrix)
   Build command: npm run build
   Test command: npm test
+  Dependencies installed: yes (node_modules/ present)
 ```
 
 ## Step 2: Select Aggressiveness Level
@@ -78,8 +95,9 @@ For each dependency in the project:
 
 Execute the `/socket-dep-patch` workflow:
 
-1. Run `socket-patch apply --dry-run` to preview available patches
-2. Apply all patches with `socket-patch apply`
+1. Ensure dependencies are installed (should have been verified in Step 1)
+2. Run `socket-patch scan` to discover available patches
+3. Apply all patches with `socket-patch apply`
 3. Build and test to verify nothing broke
 4. Commit the patch manifest (`.socket/manifest.json`)
 
@@ -153,7 +171,8 @@ Aggressive repair. Apply everything possible, skip and continue on individual fa
 
 ### Phase 3c: Patch Everything Remaining
 
-1. Run `socket-patch apply` on everything remaining
+1. Run `socket-patch scan` to discover patches for remaining dependencies
+2. Run `socket-patch apply` to apply all discovered patches
 2. Build and test
 3. Commit patch manifest
 
@@ -196,6 +215,7 @@ Repair Complete (Level 2 — Cautious)
 - **Build/test command unknown**: Ask the user for the correct build and test commands before starting repair.
 - **Socket CLI not available**: Binary patches and `socket fix` require the Socket CLI. Suggest running `/socket-setup` first, or fall back to cleanup-only mode (Phase 1a only).
 - **All upgrades fail in Level 3**: If every upgrade attempt fails, report what was tried and suggest the user investigate manually. The cleanup and patch phases may still have succeeded.
+- **Authentication required**: Levels 2 and 3 use `socket fix` which requires a Socket account and API token. If the user is not authenticated, fall back to Level 1 (cleanup + patches only). To authenticate, run `socket login` or set `SOCKET_CLI_API_TOKEN`. To create an account, visit https://socket.dev.
 - **Network errors**: `socket fix` and `socket-patch` require network access. Check connectivity and retry once before skipping.
 
 ## Tips
