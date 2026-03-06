@@ -1,11 +1,11 @@
 ---
-name: upgrade
+name: dep-upgrade
 description: Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration.
 ---
 
-# Upgrade
+# Dep Upgrade
 
-Use the `socket fix` command to discover vulnerable dependencies, compute safe upgrade paths, and apply version updates — then fix any breaking changes in the codebase so everything builds and passes tests.
+Use the `socket fix` command to discover vulnerable dependencies, compute safe upgrade paths, and apply version updates one at a time — then fix any breaking changes in the codebase so everything builds and passes tests.
 
 ## When to Use
 
@@ -129,7 +129,7 @@ Iterate until everything passes:
 
 1. **Build the project** to check for compile/type errors
 2. **Run the full test suite** and fix any failing tests
-3. **Run the `scan` skill** to confirm no new vulnerabilities were introduced by the upgrades
+3. **Run the `/research-scan` skill** to confirm no new vulnerabilities were introduced by the upgrades
 4. **Re-run `socket fix --all --no-apply-fixes --json`** to verify no fixable vulnerabilities remain
 
 If tests fail after fixing, investigate each failure:
@@ -149,7 +149,7 @@ Fixing all vulnerabilities in a Node.js project (success case):
    - Major bump applied → 2 test failures in route tests
    - Fix route handler code to match new Express API
    - Tests pass → commit → reports success
-6. All subagents succeeded → run `scan` skill → no new vulnerabilities
+6. All subagents succeeded → run `/research-scan` skill → no new vulnerabilities
 
 Failure case — main agent stops on first failure:
 
@@ -183,16 +183,16 @@ To manage context window limits without subagents:
 - **Authentication required**: Some `socket fix` features require enterprise authentication. Run `socket login` or set `SOCKET_CLI_API_TOKEN`. Use the `/setup` skill for guidance.
 - **Network errors during fix**: `socket fix` contacts the Socket API to compute upgrade paths. Check network connectivity and try again.
 
-## How This Differs from `/patch`
+## How This Differs from `/dep-patch`
 
-| | `/upgrade` (this skill) | `/patch` |
+| | `/dep-upgrade` (this skill) | `/dep-patch` |
 |---|---|---|
 | **Primary tool** | `socket fix` | `socket-patch apply` |
 | **What it does** | Upgrades dependency versions to fix CVEs | Applies binary-level patches without changing versions |
 | **Version changes?** | Yes | No |
 | **Code changes needed?** | Possibly (API migration for major bumps) | No |
 
-Use `/upgrade` when you want full version upgrades. Use `/patch` when you need fixes without version churn.
+Use `/dep-upgrade` when you want full version upgrades. Use `/dep-patch` when you need fixes without version churn.
 
 ## Tips
 
@@ -204,6 +204,6 @@ Use `/upgrade` when you want full version upgrades. Use `/patch` when you need f
 - **Stop on failure** — if any single update cannot be completed, halt the entire process and report to the user rather than continuing with a broken state
 - Commit after each successful update so progress is saved and failures can be cleanly reverted
 - Use `--minimum-release-age 2d` to avoid upgrading to freshly-published versions
-- Combine with the `inspect` skill to compare security profiles before and after upgrades
-- After all fixes are applied, run the `scan` skill to verify no new risks were introduced
+- Combine with the `/research-inspect` skill to compare security profiles before and after upgrades
+- After all fixes are applied, run the `/research-scan` skill to verify no new risks were introduced
 - For monorepos, use `--include` and `--exclude` to target specific workspaces

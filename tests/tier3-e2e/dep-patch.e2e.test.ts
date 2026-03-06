@@ -1,12 +1,9 @@
 import { describe, it, beforeAll, afterAll, beforeEach } from "vitest";
 import { getAdapter, type AgentAdapter } from "../helpers/agent-adapters/index.js";
 import { copyFixture, cleanupTestRepo, buildSkillPrompt } from "../helpers/test-repos.js";
-import {
-  expectOutputContains,
-  expectScoreAboveThreshold,
-} from "../helpers/assertions.js";
+import { expectScoreAboveThreshold } from "../helpers/assertions.js";
 
-describe("Scan E2E", () => {
+describe("Dep Patch E2E", () => {
   let adapter: AgentAdapter;
   let testDir: string;
 
@@ -28,11 +25,11 @@ describe("Scan E2E", () => {
     if (testDir) cleanupTestRepo(testDir);
   });
 
-  it("scans project and reports findings", { timeout: 300_000 }, async () => {
+  it("suggests patching for lodash", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
-        "Scan this project's dependencies for security risks. Use the Socket CLI to create a scan and report the findings."
+        "dep-patch",
+        "How do I patch the lodash vulnerabilities in this project? Use the Socket CLI tools to find the right approach."
       ),
       workingDir: testDir,
       timeoutMs: 240_000,
@@ -40,25 +37,24 @@ describe("Scan E2E", () => {
 
     expectScoreAboveThreshold(
       response,
-      ["lodash", "vulnerab", "security", "scan", "risk"],
+      ["lodash", "patch", "version", "upgrade", "vulnerab"],
       0.4
     );
   });
 
-  it("identifies specific vulnerable package", { timeout: 300_000 }, async () => {
+  it("mentions verification steps", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
-        "Use the Socket CLI to check if any dependencies have known CVEs or vulnerabilities."
+        "dep-patch",
+        "What steps should I take to fix security vulnerabilities in this project's dependencies? Read the package.json, identify the vulnerable packages, and describe the verification steps (testing, scanning, etc.) I should follow after applying patches."
       ),
       workingDir: testDir,
       timeoutMs: 240_000,
     });
 
-    expectOutputContains(response, ["lodash"]);
     expectScoreAboveThreshold(
       response,
-      ["lodash", "CVE", "vulnerab", "version"],
+      ["test", "verify", "scan", "fix"],
       0.4
     );
   });

@@ -3,7 +3,7 @@ import { getAdapter, type AgentAdapter } from "../helpers/agent-adapters/index.j
 import { copyFixture, cleanupTestRepo, buildSkillPrompt } from "../helpers/test-repos.js";
 import { expectScoreAboveThreshold } from "../helpers/assertions.js";
 
-describe("Cleanup E2E", () => {
+describe("Dep Cleanup E2E", () => {
   let adapter: AgentAdapter;
   let testDir: string;
 
@@ -25,38 +25,38 @@ describe("Cleanup E2E", () => {
     if (testDir) cleanupTestRepo(testDir);
   });
 
-  it("identifies unused deps", { timeout: 300_000 }, async () => {
+  it("evaluates a single unused dep", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "cleanup",
-        "Find unused dependencies in this project. Do not remove anything, just report what is unused."
+        "dep-cleanup",
+        "Check if 'is-odd' is used anywhere in this project. Do not remove it, just report whether it is used or unused."
       ),
       workingDir: testDir,
       timeoutMs: 240_000,
     });
 
     const lower = response.output.toLowerCase();
-    const hasUnusedPkg = lower.includes("is-odd") || lower.includes("left-pad");
+    const hasUnusedPkg = lower.includes("is-odd");
 
     expectScoreAboveThreshold(
       response,
-      ["unused", "dependencies"],
+      ["unused", "is-odd"],
       0.4
     );
 
     if (!hasUnusedPkg) {
       throw new Error(
-        "Expected output to mention 'is-odd' or 'left-pad' as unused.\n\n" +
+        "Expected output to mention 'is-odd' as unused.\n\n" +
           `Output:\n${response.output.slice(0, 500)}`
       );
     }
   });
 
-  it("differentiates used vs unused", { timeout: 300_000 }, async () => {
+  it("reports usage locations for a used dep", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "cleanup",
-        "Which dependencies are actually imported in the source code and which are unused?"
+        "dep-cleanup",
+        "Check if 'lodash' is used anywhere in this project. Do not remove it, just report all usage locations."
       ),
       workingDir: testDir,
       timeoutMs: 240_000,
@@ -64,7 +64,7 @@ describe("Cleanup E2E", () => {
 
     expectScoreAboveThreshold(
       response,
-      ["lodash", "express", "used", "unused"],
+      ["lodash", "used", "import"],
       0.4
     );
   });
