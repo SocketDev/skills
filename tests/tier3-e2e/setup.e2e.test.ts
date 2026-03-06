@@ -1,12 +1,9 @@
 import { describe, it, beforeAll, afterAll, beforeEach } from "vitest";
 import { getAdapter, type AgentAdapter } from "../helpers/agent-adapters/index.js";
 import { copyFixture, cleanupTestRepo, buildSkillPrompt } from "../helpers/test-repos.js";
-import {
-  expectOutputContains,
-  expectScoreAboveThreshold,
-} from "../helpers/assertions.js";
+import { expectScoreAboveThreshold } from "../helpers/assertions.js";
 
-describe("Scan E2E", () => {
+describe("Setup E2E", () => {
   let adapter: AgentAdapter;
   let testDir: string;
 
@@ -28,11 +25,11 @@ describe("Scan E2E", () => {
     if (testDir) cleanupTestRepo(testDir);
   });
 
-  it("scans project and reports findings", { timeout: 300_000 }, async () => {
+  it("detects GitHub Actions and suggests config", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
-        "Scan this project's dependencies for security risks. Use the Socket CLI to create a scan and report the findings."
+        "setup",
+        "Set up Socket for this project. Detect the CI/CD system and tell me what configuration is needed."
       ),
       workingDir: testDir,
       timeoutMs: 240_000,
@@ -40,25 +37,24 @@ describe("Scan E2E", () => {
 
     expectScoreAboveThreshold(
       response,
-      ["lodash", "vulnerab", "security", "scan", "risk"],
+      ["github", "actions", "socket", "workflow"],
       0.4
     );
   });
 
-  it("identifies specific vulnerable package", { timeout: 300_000 }, async () => {
+  it("provides CLI installation guidance", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
-        "Use the Socket CLI to check if any dependencies have known CVEs or vulnerabilities."
+        "setup",
+        "How do I install and set up the Socket CLI for this project?"
       ),
       workingDir: testDir,
       timeoutMs: 240_000,
     });
 
-    expectOutputContains(response, ["lodash"]);
     expectScoreAboveThreshold(
       response,
-      ["lodash", "CVE", "vulnerab", "version"],
+      ["npm install", "socket", "cli", "version"],
       0.4
     );
   });

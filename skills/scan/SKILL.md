@@ -70,6 +70,28 @@ socket scan create --repo . --org <org-slug> --json
 
 ### 2. Interpret Results
 
+When using `--json`, the output is a JSON object with these top-level keys:
+
+```json
+{
+  "id": "scan-id-string",
+  "url": "https://socket.dev/dashboard/org/.../scan/...",
+  "packages": [
+    {
+      "name": "lodash",
+      "version": "4.17.20",
+      "ecosystem": "npm",
+      "score": { "overall": 85, "security": 90, "quality": 80, "maintenance": 75, "license": 95 },
+      "alerts": [ { "type": "criticalCVE", "severity": "critical", "title": "...", "description": "..." } ],
+      "vulnerabilities": [ { "id": "GHSA-...", "severity": "high", "fixedIn": "4.17.21" } ]
+    }
+  ],
+  "summary": { "total": 150, "critical": 1, "high": 3, "medium": 12, "low": 25, "malware": 0 }
+}
+```
+
+Use these keys to programmatically filter and prioritize findings.
+
 Triage alerts by severity:
 
 - **Critical / High severity**: Stop and report these to the user immediately. These represent known vulnerabilities with available exploits or severe supply-chain risks that require urgent attention.
@@ -105,6 +127,14 @@ Based on scan results, cross-reference other skills to resolve issues:
 - **Packages needing deeper investigation** — use the `/review` skill to research specific packages
 - **Packages with Socket patches available** — use the `/patch` skill to apply security patches
 - **Unused dependencies** — use the `/cleanup` skill to remove packages that are no longer needed
+
+## Error Handling
+
+- **`socket: command not found`**: Install the Socket CLI with `npm install -g socket` or use `npx socket` as a prefix. If you need a permanent installation, use the `/setup` skill.
+- **`socket scan create` fails with authentication error**: Enterprise scans require authentication. Run `socket login` or set the `SOCKET_CLI_API_TOKEN` environment variable. Free-tier users can still run basic scans without authentication.
+- **`socket scan reach` returns "not available"**: Reachability analysis requires an enterprise subscription. Skip this step for free-tier users.
+- **No manifest/lock files found**: The scan relies on manifest files (`package.json`, `requirements.txt`, `go.mod`, etc.). Ensure the `--repo` path points to a directory containing these files.
+- **Scan times out**: Large monorepos with many manifest files may take longer. Try limiting the scan to a specific subdirectory with `--repo ./path/to/subdir`.
 
 ## Tips
 

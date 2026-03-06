@@ -1,12 +1,9 @@
 import { describe, it, beforeAll, afterAll, beforeEach } from "vitest";
 import { getAdapter, type AgentAdapter } from "../helpers/agent-adapters/index.js";
 import { copyFixture, cleanupTestRepo, buildSkillPrompt } from "../helpers/test-repos.js";
-import {
-  expectOutputContains,
-  expectScoreAboveThreshold,
-} from "../helpers/assertions.js";
+import { expectScoreAboveThreshold } from "../helpers/assertions.js";
 
-describe("Scan E2E", () => {
+describe("Cleanup E2E", () => {
   let adapter: AgentAdapter;
   let testDir: string;
 
@@ -28,37 +25,46 @@ describe("Scan E2E", () => {
     if (testDir) cleanupTestRepo(testDir);
   });
 
-  it("scans project and reports findings", { timeout: 300_000 }, async () => {
+  it("identifies unused deps", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
-        "Scan this project's dependencies for security risks. Use the Socket CLI to create a scan and report the findings."
+        "cleanup",
+        "Find unused dependencies in this project. Do not remove anything, just report what is unused."
       ),
       workingDir: testDir,
       timeoutMs: 240_000,
     });
 
+    const lower = response.output.toLowerCase();
+    const hasUnusedPkg = lower.includes("is-odd") || lower.includes("left-pad");
+
     expectScoreAboveThreshold(
       response,
-      ["lodash", "vulnerab", "security", "scan", "risk"],
+      ["unused", "dependencies"],
       0.4
     );
+
+    if (!hasUnusedPkg) {
+      throw new Error(
+        "Expected output to mention 'is-odd' or 'left-pad' as unused.\n\n" +
+          `Output:\n${response.output.slice(0, 500)}`
+      );
+    }
   });
 
-  it("identifies specific vulnerable package", { timeout: 300_000 }, async () => {
+  it("differentiates used vs unused", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
-        "Use the Socket CLI to check if any dependencies have known CVEs or vulnerabilities."
+        "cleanup",
+        "Which dependencies are actually imported in the source code and which are unused?"
       ),
       workingDir: testDir,
       timeoutMs: 240_000,
     });
 
-    expectOutputContains(response, ["lodash"]);
     expectScoreAboveThreshold(
       response,
-      ["lodash", "CVE", "vulnerab", "version"],
+      ["lodash", "express", "used", "unused"],
       0.4
     );
   });

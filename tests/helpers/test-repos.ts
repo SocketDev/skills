@@ -8,6 +8,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
+const ROOT = path.resolve(__dirname, "../..");
 const FIXTURES_DIR = path.resolve(__dirname, "..", "fixtures");
 
 /**
@@ -33,6 +34,25 @@ export function copyFixture(fixtureName: string): string {
  */
 export function cleanupTestRepo(dir: string): void {
   fs.rmSync(dir, { recursive: true, force: true });
+}
+
+/**
+ * Build a prompt with skill instructions injected.
+ *
+ * Reads the SKILL.md for the given skill and wraps the user's prompt
+ * with the skill content and MCP server reference. Agent-agnostic.
+ */
+export function buildSkillPrompt(skillName: string, userPrompt: string): string {
+  const skillPath = path.join(ROOT, "skills", skillName, "SKILL.md");
+  if (!fs.existsSync(skillPath)) {
+    throw new Error(`Skill '${skillName}' not found at ${skillPath}`);
+  }
+  const skillContent = fs.readFileSync(skillPath, "utf-8");
+  return (
+    `You have access to the following skill:\n\n${skillContent}\n\n` +
+    `You also have access to the Socket MCP server at https://socket.dev/mcp\n\n` +
+    `Task: ${userPrompt}`
+  );
 }
 
 function copyDirSync(src: string, dest: string): void {

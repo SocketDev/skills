@@ -6,7 +6,7 @@ import {
   expectScoreAboveThreshold,
 } from "../helpers/assertions.js";
 
-describe("Scan E2E", () => {
+describe("Update E2E", () => {
   let adapter: AgentAdapter;
   let testDir: string;
 
@@ -28,11 +28,11 @@ describe("Scan E2E", () => {
     if (testDir) cleanupTestRepo(testDir);
   });
 
-  it("scans project and reports findings", { timeout: 300_000 }, async () => {
+  it("discovers vulns and suggests updates", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
-        "Scan this project's dependencies for security risks. Use the Socket CLI to create a scan and report the findings."
+        "update",
+        "Read this project's package.json and identify which dependencies have known vulnerabilities. lodash 4.17.20 is known to have CVEs — what version should it be updated to? Suggest safe upgrade versions for any vulnerable packages. Do not run socket fix. You can use npm audit if available, but primarily rely on reading the package.json and your knowledge of CVEs."
       ),
       workingDir: testDir,
       timeoutMs: 240_000,
@@ -40,16 +40,16 @@ describe("Scan E2E", () => {
 
     expectScoreAboveThreshold(
       response,
-      ["lodash", "vulnerab", "security", "scan", "risk"],
+      ["lodash", "vulnerab", "update", "fix", "version"],
       0.4
     );
   });
 
-  it("identifies specific vulnerable package", { timeout: 300_000 }, async () => {
+  it("identifies lodash upgrade path", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
-        "Use the Socket CLI to check if any dependencies have known CVEs or vulnerabilities."
+        "update",
+        "What version should lodash be updated to for security? Try `npx socket npm/lodash` to check, but if the command fails, use your knowledge of lodash CVEs to recommend a safe version."
       ),
       workingDir: testDir,
       timeoutMs: 240_000,
@@ -58,7 +58,7 @@ describe("Scan E2E", () => {
     expectOutputContains(response, ["lodash"]);
     expectScoreAboveThreshold(
       response,
-      ["lodash", "CVE", "vulnerab", "version"],
+      ["lodash", "version", "upgrade", "update", "fix", "security"],
       0.4
     );
   });

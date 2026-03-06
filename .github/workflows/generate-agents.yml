@@ -34,6 +34,7 @@ on:
           - claude-code
           - codex
           - gemini
+          - all
         default: claude-code
 
 jobs:
@@ -89,7 +90,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        agent: ${{ fromJson(format('["{0}"]', github.event.inputs.test_agent || 'claude-code')) }}
+        agent: ${{ fromJson(
+          github.event.inputs.test_agent == 'all'
+            && '["claude-code","codex","gemini"]'
+            || format('["{0}"]', github.event.inputs.test_agent || 'claude-code')
+          ) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

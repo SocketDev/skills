@@ -6,6 +6,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { parseFrontmatter } from "./lib/frontmatter";
 
 const ROOT = path.resolve(__dirname, "..");
 const CLAUDE_PLUGIN_MANIFEST = path.join(ROOT, ".claude-plugin", "plugin.json");
@@ -24,20 +25,6 @@ function loadJson(filePath: string): Record<string, unknown> {
     throw new Error(`Missing required file: ${filePath}`);
   }
   return JSON.parse(fs.readFileSync(filePath, "utf-8"));
-}
-
-function parseFrontmatter(text: string): Record<string, string> {
-  const match = text.match(/^---\s*\n([\s\S]*?)\n---\s*/);
-  if (!match) return {};
-  const data: Record<string, string> = {};
-  for (const line of match[1].split("\n")) {
-    if (!line.includes(":")) continue;
-    const idx = line.indexOf(":");
-    const key = line.slice(0, idx).trim();
-    const value = line.slice(idx + 1).trim();
-    if (key && value) data[key] = value;
-  }
-  return data;
 }
 
 function collectSkillNames(): string[] {

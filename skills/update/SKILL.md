@@ -103,18 +103,18 @@ Once you understand what will change from the dry run, apply upgrades **one vuln
 
 After `socket fix` completes, review the changes it made to manifest and lock files (e.g. `package.json`, `package-lock.json`, `requirements.txt`, `go.mod`).
 
-### 3. Identify Breaking Changes
+### 3. Identify Breaking Changes (runs inside each subagent)
 
-After applying fixes, determine what may have broken:
+After each subagent applies a fix, it determines what may have broken. **These steps happen inside the subagent, not in the main agent** — the main agent only dispatches and collects results.
 
 1. **Check what changed**: Review the diff of manifest/lock files to see which packages were upgraded and by how many major/minor/patch versions
 2. **For major version bumps**: Look up the CHANGELOG or migration guide for each upgraded package
 3. **For minor/patch bumps**: These are usually backwards-compatible, but still check release notes for deprecation warnings
 4. **Identify affected code**: Search the codebase for imports and usage of each upgraded package
 
-### 4. Fix Breaking Changes
+### 4. Fix Breaking Changes (runs inside each subagent)
 
-Address any breaking changes introduced by the upgrades:
+The subagent addresses any breaking changes introduced by the upgrade:
 
 - **Renamed or removed APIs**: Search for usage of deprecated or removed functions, classes, or methods and update them
 - **Changed imports**: Update import paths if the package restructured its module exports
@@ -157,6 +157,42 @@ Failure case — main agent stops on first failure:
 2. **Subagent 1 — lodash**: patch applied → tests pass → commit → reports success
 3. **Subagent 2 — ws**: tried `--no-major-updates` (no fix), tried major bump (tests fail, code migration too complex), reverted → reports failure
 4. **Main agent stops.** Reports to user: "ws (GHSA-yyyy-yyyy-yyyy) could not be updated. Tried minor/patch (no fix available) and major bump v7→v8 (broke WebSocket handshake tests, migration not straightforward). lodash was successfully updated. semver was not attempted."
+
+## Fallback: Agents Without Subagent Support
+
+Some agents (Codex, Gemini CLI) do not support spawning subagents. In this case, use a sequential workflow within the main context:
+
+1. Run `socket fix --all --no-apply-fixes --json` to discover all vulnerabilities
+2. For each vulnerability, **one at a time**:
+   a. Apply the fix: `socket fix --id GHSA-xxxx --no-major-updates`
+   b. Build and test the project
+   c. If tests pass, commit the change
+   d. If tests fail, attempt to fix breaking changes, then retest. If unfixable, revert and stop.
+3. After all fixes, run `socket fix --all --no-apply-fixes --json` to verify no vulnerabilities remain
+
+To manage context window limits without subagents:
+- Redirect build and test output to files (e.g., `npm test > test-output.txt 2>&1`) and only read them if failures occur
+- Process one vulnerability at a time and commit between each to keep diffs small
+- If the context window is getting full, stop and report progress so far
+
+## Error Handling
+
+- **`socket fix` returns no results**: The project may have no fixable vulnerabilities, or the Socket API may not cover the project's ecosystems. Check that manifest and lock files exist in the repository.
+- **`socket fix --id` fails with "GHSA not found"**: The advisory ID may be incorrect or not yet indexed. Try searching by CVE ID or PURL instead.
+- **`socket fix` modifies files but tests fail**: The subagent (or main agent in fallback mode) should revert the changes with `git checkout -- .` and try an alternative version. Never leave the project in a broken state.
+- **Authentication required**: Some `socket fix` features require enterprise authentication. Run `socket login` or set `SOCKET_CLI_API_TOKEN`. Use the `/setup` skill for guidance.
+- **Network errors during fix**: `socket fix` contacts the Socket API to compute upgrade paths. Check network connectivity and try again.
+
+## How This Differs from `/patch`
+
+| | `/update` (this skill) | `/patch` |
+|---|---|---|
+| **Primary tool** | `socket fix` | `socket-patch apply` |
+| **What it does** | Upgrades dependency versions to fix CVEs | Applies binary-level patches without changing versions |
+| **Version changes?** | Yes | No |
+| **Code changes needed?** | Possibly (API migration for major bumps) | No |
+
+Use `/update` when you want full version upgrades. Use `/patch` when you need fixes without version churn.
 
 ## Tips
 

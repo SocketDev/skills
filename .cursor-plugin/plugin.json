@@ -7,8 +7,8 @@
   "author": {
     "name": "Socket"
   },
-  "homepage": "https://github.com/socketdev/socket-skills",
-  "repository": "https://github.com/socketdev/socket-skills",
+  "homepage": "https://github.com/SocketDev/skills",
+  "repository": "https://github.com/SocketDev/skills",
   "license": "MIT",
   "keywords": [
     "socket",

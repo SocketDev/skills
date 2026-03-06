@@ -69,114 +69,58 @@ description: Set up Socket — prompt for API key, install the CLI, authenticate
   (github.com/apps/socket-security) for automatic PR scanning
 
 ### GitLab CI
-- Add a before_script or dedicated stage to install sfw
-- Install: curl standalone binary or npm install -g sfw
-- Prefix install commands with sfw
-- Enterprise: set SOCKET_CLI_API_TOKEN as CI/CD variable in GitLab settings
+- Add a `before_script` or dedicated stage to install `sfw`
+- Install via npm: `npm install -g @anthropic-ai/sfw`
+- Or install standalone binary:
+  ```bash
+  curl -fsSL https://socket.dev/download/sfw/latest/linux-x64 -o /usr/local/bin/sfw && chmod +x /usr/local/bin/sfw
+  ```
+- Prefix install commands with sfw (`sfw npm install`, `sfw pip install`, etc.)
+- Enterprise: set `SOCKET_CLI_API_TOKEN` as CI/CD variable in GitLab settings
 
 ### Bitbucket Pipelines
-- Add pipe step to install sfw binary
+- Add pipe step to install `sfw` binary:
+  ```bash
+  curl -fsSL https://socket.dev/download/sfw/latest/linux-x64 -o /usr/local/bin/sfw && chmod +x /usr/local/bin/sfw
+  ```
 - Prefix install commands with sfw
-- Enterprise: set SOCKET_CLI_API_TOKEN as repository variable
+- Enterprise: set `SOCKET_CLI_API_TOKEN` as repository variable
 
 ### Generic CI/CD
-- Download sfw binary via curl/wget
+- Download `sfw` binary:
+  ```bash
+  # Linux x64
+  curl -fsSL https://socket.dev/download/sfw/latest/linux-x64 -o /usr/local/bin/sfw && chmod +x /usr/local/bin/sfw
+  # macOS arm64
+  curl -fsSL https://socket.dev/download/sfw/latest/darwin-arm64 -o /usr/local/bin/sfw && chmod +x /usr/local/bin/sfw
+  ```
+- Or install via npm: `npm install -g @anthropic-ai/sfw`
 - Prefix install commands with sfw
-- Set SOCKET_CLI_API_TOKEN as env var for enterprise
+- Set `SOCKET_CLI_API_TOKEN` as env var for enterprise
 
 ### Local Development
-- npm install -g sfw (or standalone binary)
-- Usage: sfw npm install, sfw pip install, etc.
+- `npm install -g @anthropic-ai/sfw` (or standalone binary as above)
+- Usage: `sfw npm install`, `sfw pip install`, etc.
 
-## Sub-Skill: Patch Setup
+## Patch Setup
 
-### When to Use (Patch Sub-Skill)
-- User wants to set up socket-patch
-- User wants to apply security patches in CI
-- User wants postinstall hooks for automatic patching
+For detailed patching instructions — including installing `socket-patch`, applying binary-level patches, setting up postinstall hooks, and configuring patching in CI/CD pipelines — use the `/patch` skill.
 
-### P1: Install socket-patch
-- npm: npx @socketsecurity/socket-patch (one-off) or npm install -g @socketsecurity/socket-patch
-- pip: pip install socket-patch
-- cargo: cargo install socket-patch-cli
-- Standalone: curl installer from socket-patch repo
-- No API key required for socket-patch apply
+The `/patch` skill covers GitHub Actions, GitLab CI, Bitbucket Pipelines, and generic CI/CD systems. No API key is required for `socket-patch apply`.
 
-### P2: Generic Agent — Scan Codebase for Install/Build Locations
-The agent must comprehensively scan the project to find ALL places where
-dependencies are installed and builds happen:
+## Error Handling
 
-| Location | What to Look For |
-|----------|-----------------|
-| package.json scripts | install, postinstall, build, prebuild |
-| CI configs (all formats) | install steps, build steps |
-| Makefile / Justfile | install and build targets |
-| Dockerfile / docker-compose | RUN install, RUN build layers |
-| Shell scripts (*.sh) | install/build commands |
-| pyproject.toml / setup.py | build system config |
-| Cargo.toml | build scripts |
-
-For each location, record:
-- File path
-- The install command/step
-- The build command/step
-- Where to insert socket-patch apply (after install, before build)
-
-Present findings to user before making changes.
-
-### P3: GitHub Actions (Preferred for GitHub repos)
-- Use SocketDev/action@v1 with mode: patch
-  ```yaml
-  - uses: SocketDev/action@v1
-    with:
-      mode: patch
-      # patch-ecosystems: npm,pypi  (optional)
-      # patch-dry-run: false        (optional)
-  ```
-- Place after checkout, before install
-  (binary is available when npm postinstall hooks run)
-- No socket-token needed for patch mode
-
-### P4: GitLab CI
-- Add stage/step to install socket-patch binary
-- Add socket-patch apply step after install, before build
-- Example .gitlab-ci.yml snippet
-
-### P5: Bitbucket Pipelines
-- Add step to install socket-patch binary
-- Add socket-patch apply step after install, before build
-- Example bitbucket-pipelines.yml snippet
-
-### P6: Other CI/CD Systems (Jenkins, CircleCI, Travis, Azure, etc.)
-- Install socket-patch binary via curl/npm
-- Add socket-patch apply step after install, before build
-- Generic pattern applicable to any CI system
-
-### P7: Local Development / npm Projects
-- Run socket-patch setup to add postinstall hook to package.json
-- This auto-adds "postinstall": "socket-patch apply"
-- Works for any npm project regardless of CI system
-
-### P8: Generic Fallback
-If the agent cannot determine the CI/CD system or the project uses
-an unusual build system:
-- Identify the project's install and build commands by reading all
-  config files, scripts, and documentation
-- Insert socket-patch apply at the appropriate point
-- For interpreted projects (Python, Ruby): add after pip install / bundle install
-- For compiled projects (Rust, Go, Java): add after dependency fetch, before compile
-- For containers: add RUN socket-patch apply layer after install layer
-
-### P9: Verify
-- socket-patch apply --dry-run
-- Run the build
-- Check .socket/manifest.json is committed
+- **`socket: command not found`**: Ensure Node.js 18+ is installed, then run `npm install -g socket`. Check that the npm global bin directory is in `PATH` (run `npm bin -g` to find it).
+- **`socket login` fails**: Check network connectivity. If behind a proxy, ensure `HTTPS_PROXY` is set. Try setting `SOCKET_CLI_API_TOKEN` directly as an environment variable instead.
+- **`socket organization list` returns empty**: The API token may lack organization access. Verify the token at https://socket.dev/dashboard and ensure it has the correct scopes.
+- **`sfw` not intercepting installs**: Ensure `sfw` is in `PATH` before the package manager. In CI, verify the install step runs before any dependency install commands.
+- **GitHub Action fails with permission errors**: Ensure the `socket-token` secret is set correctly in the repository settings and the workflow has `contents: read` permission.
 
 ## Tips
-- Never commit API tokens. Use socket login locally, env vars in CI.
-- socket-patch apply does not require an API key.
-- Use SocketDev/action@v1 (correct casing) in GitHub workflow files.
-- For monorepos, use patch-cwd to target specific directories.
-- After setup, use scan skill for first audit, review skill for package inspection.
+- Never commit API tokens. Use `socket login` locally, env vars in CI.
+- `socket-patch apply` does not require an API key.
+- Use `SocketDev/action@v1` (correct casing) in GitHub workflow files.
+- For monorepos, use `patch-cwd` to target specific directories.
+- After setup, use the `/scan` skill for a first audit and the `/review` skill for package inspection.
 - For GitHub repos, consider also installing the Socket Security GitHub App
   for automatic PR scanning.

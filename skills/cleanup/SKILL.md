@@ -55,7 +55,7 @@ For each dependency, search the codebase for import, require, or usage patterns.
 | Ecosystem | Patterns to Search |
 |-----------|-------------------|
 | npm/pnpm/yarn | `require('pkg')`, `require("pkg")`, `import ... from 'pkg'`, `import ... from "pkg"`, `import 'pkg'`, `import "pkg"`, `import('pkg')`, `import("pkg")`. Also check for subpath imports like `pkg/sub`. |
-| PyPI | `import pkg`, `from pkg import ...`. **Note:** the package name on PyPI often differs from the import name (e.g. `Pillow` → `PIL`, `beautifulsoup4` → `bs4`, `python-dotenv` → `dotenv`, `scikit-learn` → `sklearn`, `PyYAML` → `yaml`). Check both the package name and common import aliases. |
+| PyPI | `import pkg`, `from pkg import ...`. **Note:** the package name on PyPI often differs from the import name (e.g. `Pillow` → `PIL`, `beautifulsoup4` → `bs4`, `python-dotenv` → `dotenv`, `scikit-learn` → `sklearn`, `PyYAML` → `yaml`). Check both the package name and common import aliases. **Tip:** run `pip show <package-name>` — the output includes a `Location` field and the actual top-level package names are the directories at that location matching the package. Alternatively, check `top_level.txt` in the package's `.dist-info` directory. |
 | Cargo | `use crate_name::`, `extern crate crate_name`, references in proc-macro attributes. **Note:** hyphens in crate names become underscores in Rust code (e.g. `serde-json` → `serde_json`). |
 | Bundler | `require 'gem_name'`, `require "gem_name"`, autoload references. |
 | Maven | `import groupId.artifactId.` or subpackage patterns in `.java` and `.kt` files. Match on the groupId prefix. |
@@ -134,6 +134,12 @@ After removal, verify the project still works:
 1. **Build the project** using its standard build command
 2. **Run the test suite** to catch any runtime dependency on a removed package
 3. If something fails, identify which removed dependency was needed, re-add it using the package manager's install/add command, and move it to the "possibly unused" category for the user to review
+
+## Error Handling
+
+- **Build or tests fail after removal**: Identify which removed dependency caused the failure by checking error messages for missing modules. Re-add it with the package manager's install/add command and move it to the "possibly unused" category.
+- **Package manager removal command fails**: The package may already have been removed from the lock file but still referenced in the manifest, or vice versa. Try manually editing the manifest file and re-running the package manager's install command.
+- **False positive — package appears unused but is required**: Some packages are loaded dynamically, used as peer dependencies, or referenced only in build/CI scripts. When in doubt, flag as "possibly unused" rather than removing.
 
 ## Tips
 

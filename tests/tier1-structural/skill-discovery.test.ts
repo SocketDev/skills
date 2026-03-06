@@ -1,25 +1,12 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
+import { parseFrontmatter } from "../../scripts/lib/frontmatter";
 
 const ROOT = path.resolve(__dirname, "../..");
 const SKILLS_DIR = path.join(ROOT, "skills");
 
-const EXPECTED_SKILLS = ["patch", "review", "scan", "setup", "update"];
-
-function parseFrontmatter(text: string): Record<string, string> {
-  const match = text.match(/^---\s*\n([\s\S]*?)\n---\s*/);
-  if (!match) return {};
-  const data: Record<string, string> = {};
-  for (const line of match[1].split("\n")) {
-    if (!line.includes(":")) continue;
-    const idx = line.indexOf(":");
-    const key = line.slice(0, idx).trim();
-    const value = line.slice(idx + 1).trim();
-    if (key && value) data[key] = value;
-  }
-  return data;
-}
+const EXPECTED_SKILLS = ["audit", "cleanup", "investigate", "patch", "review", "scan", "setup", "update"];
 
 function getSkillDirs(): string[] {
   return fs
@@ -88,12 +75,10 @@ describe("Skill Discovery", () => {
   it("no unexpected skill directories", () => {
     const dirs = getSkillDirs();
     const unexpected = dirs.filter((d) => !EXPECTED_SKILLS.includes(d));
-    // This is a soft check — new skills are fine, but it flags accidental additions
-    if (unexpected.length > 0) {
-      console.warn(
-        `New skill directories detected: ${unexpected.join(", ")}. ` +
-          `Update EXPECTED_SKILLS in this test if intentional.`
-      );
-    }
+    expect(
+      unexpected,
+      `Unexpected skill directories: ${unexpected.join(", ")}. ` +
+        `Update EXPECTED_SKILLS in this test if intentional.`
+    ).toEqual([]);
   });
 });

@@ -7,9 +7,13 @@
     "generate": "./scripts/publish.sh",
     "check": "./scripts/publish.sh --check",
     "test": "vitest run --config tests/vitest.config.ts",
-    "test:structural": "vitest run --config tests/vitest.config.ts --include 'tier1-structural/**/*.test.ts'",
-    "test:mcp": "vitest run --config tests/vitest.config.ts --include 'tier2-mcp/**/*.test.ts'",
-    "test:e2e": "RUN_E2E=1 vitest run --config tests/vitest.config.ts --include 'tier3-e2e/**/*.e2e.test.ts'"
+    "test:structural": "vitest run --config tests/vitest.config.ts tier1-structural/",
+    "test:mcp": "SOCKET_SECURITY_API_KEY=${SOCKET_SECURITY_API_KEY} vitest run --config tests/vitest.config.ts tier2-mcp/",
+    "test:e2e": "RUN_E2E=1 vitest run --config tests/vitest.config.ts tier3-e2e/",
+    "test:integration": "RUN_E2E=1 vitest run --config tests/vitest.config.ts tier3-e2e/",
+    "test:integration:claude": "TEST_AGENT=claude-code npm run test:integration",
+    "test:integration:codex": "TEST_AGENT=codex npm run test:integration",
+    "test:integration:gemini": "TEST_AGENT=gemini npm run test:integration"
   },
   "devDependencies": {
     "tsx": "^4.19.0",

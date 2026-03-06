@@ -1,76 +1,187 @@
 ---
 name: patch
-description: Patch one or more security vulnerabilities and set up patching infrastructure within a repository. Find safe upgrade paths, apply fixes, and configure automated patching workflows.
+description: Apply Socket's binary-level security patches without changing dependency
+  versions, and set up automated patching infrastructure. Uses socket-patch apply
+  to fix vulnerabilities in-place across CI/CD and local development.
 ---
 
 # Patch
 
-Patch one or more security vulnerabilities and set up patching infrastructure within a repository. Finds safe upgrade paths, applies fixes, and configures automated patching workflows.
+Apply Socket's binary-level security patches to vulnerable dependencies **without changing their version numbers**. This skill uses `socket-patch apply` to fix known vulnerabilities in-place, and sets up the infrastructure (postinstall hooks, CI integration) to keep patches applied automatically.
+
+## How This Differs from `/update`
+
+| | `/patch` (this skill) | `/update` |
+|---|---|---|
+| **Primary tool** | `socket-patch apply` | `socket fix` |
+| **What it does** | Applies binary-level patches without changing versions | Upgrades dependency versions to fix CVEs |
+| **Version changes?** | No | Yes |
+| **Code changes needed?** | No | Possibly (API migration for major bumps) |
+| **Infrastructure setup?** | Yes (postinstall hooks, CI integration) | No |
+| **When to use** | You need fixes without version churn, or the upstream fix doesn't exist yet | You want to bring dependencies up to date |
+
+Use `/patch` when you want to fix vulnerabilities without risking breaking changes from version upgrades. Use `/update` when you want full version upgrades with automated code migration.
 
 ## When to Use
 
-- The user wants to fix vulnerabilities found by a scan
-- The user needs to upgrade a dependency to resolve a CVE
-- The user wants to set up automated security patching (e.g., Socket Pull Requests)
-- The user asks how to remediate specific security findings
+- The user wants to fix vulnerabilities without changing dependency versions
+- The user wants to set up automated patching infrastructure (postinstall hooks, CI)
+- The user wants to apply Socket's binary patches to their project
+- A vulnerability has no upstream fix yet but Socket provides a patch
+- The user wants patching in CI/CD pipelines (GitHub Actions, GitLab CI, Bitbucket, etc.)
 
-## Patching Workflow
+## Prerequisites
 
-### 1. Identify Vulnerabilities
+No API key is required for `socket-patch apply`. It works on the free tier.
 
-Start by reviewing scan results or specific CVE IDs. For each vulnerability, determine:
-- Which package and version is affected
-- What the fix version is (if available)
-- Whether the fix introduces breaking changes
+## Step 1: Install socket-patch
 
-### 2. Find Safe Upgrade Paths
+Choose the installation method for your ecosystem:
 
-Use the Socket API to determine the safest upgrade path:
-- **Patch version bump** (e.g., 1.2.3 → 1.2.4): Lowest risk, fixes only
-- **Minor version bump** (e.g., 1.2.3 → 1.3.0): Low risk, may add features
-- **Major version bump** (e.g., 1.2.3 → 2.0.0): Higher risk, may have breaking changes
+| Method | Command |
+|--------|---------|
+| npm (one-off) | `npx @socketsecurity/socket-patch apply` |
+| npm (global) | `npm install -g @socketsecurity/socket-patch` |
+| pip | `pip install socket-patch` |
+| cargo | `cargo install socket-patch-cli` |
+| Standalone (macOS/Linux) | `curl -fsSL https://raw.githubusercontent.com/nicolo-ribaudo/socket-patch-cli/main/install.sh \| sh` |
 
-Always prefer the smallest version bump that resolves the vulnerability.
+Verify installation:
 
-### 3. Apply Fixes
-
-For each package manager:
-- **npm**: `npm install package@version`, then verify with `npm audit`
-- **pip**: Update version pin in `requirements.txt` or `pyproject.toml`, then `pip install`
-- **Go**: `go get package@version`, then `go mod tidy`
-- **Maven/Gradle**: Update version in `pom.xml` or `build.gradle`
-
-### 4. Verify
-
-After patching:
-1. Run the project's test suite to catch regressions
-2. Re-scan with the `scan` skill to confirm the vulnerability is resolved
-3. Review any new transitive dependencies introduced by the upgrade
-
-## Automated Patching
-
-### Socket Pull Requests
-
-Configure Socket to automatically open PRs for security fixes:
-1. Install the Socket GitHub App on the repository
-2. Enable automated PRs in the Socket dashboard
-3. Set severity thresholds (e.g., auto-PR for critical/high, notify for medium)
-
-### Configuration
-
-Socket patching respects existing version constraints. Configure override behavior in `socket.yml`:
-```yaml
-issues:
-  - package: "*"
-    severity: critical
-    action: error
-  - package: "*"
-    severity: high
-    action: warn
 ```
+socket-patch --version
+```
+
+## Step 2: Scan for Patchable Vulnerabilities
+
+Before applying patches, do a dry run to see what would be patched:
+
+```
+socket-patch apply --dry-run
+```
+
+This shows which packages have Socket patches available without modifying anything.
+
+## Step 3: Apply Patches
+
+Apply all available patches:
+
+```
+socket-patch apply
+```
+
+This modifies vulnerable packages in-place within `node_modules/` (or the equivalent for other ecosystems) by applying binary-level fixes. No version numbers change in your manifest or lock files.
+
+After patching, verify the project still works:
+
+1. Build the project
+2. Run the full test suite
+3. Check `.socket/manifest.json` for a summary of applied patches
+
+## Step 4: Set Up Automated Patching
+
+To keep patches applied automatically, set up infrastructure so `socket-patch apply` runs after every dependency install.
+
+### Scan Codebase for Install/Build Locations
+
+Before configuring automation, scan the project to find ALL places where dependencies are installed and builds happen:
+
+| Location | What to Look For |
+|----------|-----------------|
+| `package.json` scripts | `install`, `postinstall`, `build`, `prebuild` |
+| CI configs (all formats) | install steps, build steps |
+| `Makefile` / `Justfile` | install and build targets |
+| `Dockerfile` / `docker-compose` | `RUN install`, `RUN build` layers |
+| Shell scripts (`*.sh`) | install/build commands |
+| `pyproject.toml` / `setup.py` | build system config |
+| `Cargo.toml` | build scripts |
+
+For each location, record the file path, the install command, and where to insert `socket-patch apply` (after install, before build).
+
+Present findings to the user before making changes.
+
+### GitHub Actions (Preferred for GitHub repos)
+
+Use `SocketDev/action@v1` with `mode: patch`:
+
+```yaml
+- uses: SocketDev/action@v1
+  with:
+    mode: patch
+    # patch-ecosystems: npm,pypi  (optional: limit to specific ecosystems)
+    # patch-dry-run: false        (optional: dry run mode)
+```
+
+Place after `actions/checkout`, before install steps. No `socket-token` is needed for patch mode.
+
+### GitLab CI
+
+Add a step to install `socket-patch` and apply patches after dependency install:
+
+```yaml
+before_script:
+  - curl -fsSL https://raw.githubusercontent.com/nicolo-ribaudo/socket-patch-cli/main/install.sh | sh
+  - npm install
+  - socket-patch apply
+```
+
+### Bitbucket Pipelines
+
+Add a step to install `socket-patch` and apply patches:
+
+```yaml
+script:
+  - curl -fsSL https://raw.githubusercontent.com/nicolo-ribaudo/socket-patch-cli/main/install.sh | sh
+  - npm install
+  - socket-patch apply
+```
+
+### Other CI/CD Systems (Jenkins, CircleCI, Travis, Azure, etc.)
+
+Generic pattern for any CI system:
+
+1. Install `socket-patch` via curl or npm
+2. Run your normal dependency install step
+3. Run `socket-patch apply` after install, before build
+
+### Local Development (npm Projects)
+
+Run `socket-patch setup` to add a postinstall hook to `package.json`:
+
+```
+socket-patch setup
+```
+
+This auto-adds `"postinstall": "socket-patch apply"` to your `package.json` scripts, so patches are applied every time `npm install` runs.
+
+### Generic Fallback
+
+If the project uses an unusual build system:
+
+- **Interpreted projects** (Python, Ruby): add `socket-patch apply` after `pip install` / `bundle install`
+- **Compiled projects** (Rust, Go, Java): add after dependency fetch, before compile
+- **Containers**: add a `RUN socket-patch apply` layer after the install layer
+
+## Step 5: Verify
+
+After setting up patching infrastructure:
+
+1. Run `socket-patch apply --dry-run` to confirm patches are detected
+2. Run the build to ensure nothing breaks
+3. Check that `.socket/manifest.json` is committed to version control
+
+## Error Handling
+
+- **`socket-patch` not found**: Install it using one of the methods in Step 1. For CI, ensure the install step runs before `socket-patch apply`.
+- **No patches available**: This means Socket doesn't have binary patches for the current vulnerabilities. Consider using the `/update` skill to upgrade versions instead.
+- **Build fails after patching**: Run `socket-patch apply --dry-run` to identify which patch caused the issue. Report the failing patch so the user can decide whether to skip it.
+- **Permission errors**: Ensure write access to `node_modules/` or the equivalent dependency directory.
 
 ## Tips
 
-- Always run tests after patching — even patch-level bumps can introduce regressions
-- When a direct fix isn't available, consider using `npm overrides`, `pip` constraints, or Go `replace` directives as temporary mitigations
-- Combine with the `scan` skill to verify the vulnerability is fully resolved after patching
+- `socket-patch apply` does not require an API key — it works on the free tier
+- Use `SocketDev/action@v1` (correct casing) in GitHub workflow files
+- For monorepos, use `patch-cwd` to target specific directories
+- Commit `.socket/manifest.json` to track which patches are applied
+- After patching, use the `/scan` skill to verify no residual vulnerabilities remain
+- Combine with the `/update` skill for vulnerabilities that don't have binary patches available

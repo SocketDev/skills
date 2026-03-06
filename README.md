@@ -1,8 +1,17 @@
 # Socket Security Skills
 
-Socket Security Skills are definitions for dependency security tasks like vulnerability scanning, package review, patching, firewall configuration, and secure dependency updates. They are interoperable with all major coding agent tools like OpenAI Codex, Anthropic's Claude Code, Google DeepMind's Gemini CLI, and Cursor.
+Socket Security Skills are definitions for dependency security tasks like vulnerability scanning, package review, patching, firewall configuration, and secure dependency updates. They follow the standardized [Agent Skill](https://agentskills.io/home) format and are compatible with **40+ coding agent tools** including:
 
-The Skills in this repository follow the standardized [Agent Skill](https://agentskills.io/home) format.
+- **Claude Code** (Anthropic) — native skill/plugin support
+- **Codex** (OpenAI) — Agent Skills standard + AGENTS.md fallback
+- **Gemini CLI** (Google DeepMind) — extensions support
+- **Cursor** — plugin manifest support
+- **VS Code Copilot / GitHub Copilot** — via AGENTS.md or Skills CLI
+- **Windsurf** — via Skills CLI
+- **Roo Code** — via Skills CLI
+- **Any agent supporting the Agent Skills standard** — via `npx skills add`
+
+If your agent isn't listed above but supports skills, extensions, or custom instructions, it can likely use these skills via the [Skills CLI](https://skills.sh/) or the [`agents/AGENTS.md`](agents/AGENTS.md) fallback.
 
 ## How do Skills work?
 
@@ -16,26 +25,40 @@ In practice, skills are self-contained folders that package instructions, script
 
 ## Installation
 
-Socket Security Skills are compatible with Claude Code, Codex, Gemini CLI, and Cursor.
+Socket Security Skills are compatible with Claude Code, Codex, Gemini CLI, Cursor, and any agent supporting the [Agent Skills standard](https://agentskills.io/specification).
+
+### Quick Install
+
+Install skills using the [Skills CLI](https://skills.sh/) (works with Claude Code, Codex, Gemini CLI, Cursor, and 40+ agents):
+
+```
+npx skills add SocketDev/skills
+```
+
+To list available skills before installing:
+
+```
+npx skills add SocketDev/skills --list
+```
 
 ### Claude Code
 
 1. Register the repository as a plugin marketplace:
 
 ```
-/plugin marketplace add socketdev/socket-skills
+/plugin marketplace add SocketDev/skills
 ```
 
 2. To install a skill, run:
 
 ```
-/plugin install <skill-name>@socketdev/socket-skills
+/plugin install <skill-name>@SocketDev/skills
 ```
 
 For example:
 
 ```
-/plugin install scan@socketdev/socket-skills
+/plugin install scan@SocketDev/skills
 ```
 
 ### Codex
@@ -59,7 +82,7 @@ gemini extensions install . --consent
 or use the GitHub URL:
 
 ```
-gemini extensions install https://github.com/socketdev/socket-skills.git --consent
+gemini extensions install https://github.com/SocketDev/skills.git --consent
 ```
 
 3. See [Gemini CLI extensions docs](https://geminicli.com/docs/extensions/#installing-an-extension) for more help.
@@ -79,6 +102,20 @@ For contributors, regenerate manifests with:
 ./scripts/publish.sh
 ```
 
+### Other Agents (VS Code Copilot, Windsurf, Roo Code, etc.)
+
+For any agent that supports the Agent Skills standard or custom instructions:
+
+1. Use the Skills CLI (recommended):
+
+```
+npx skills add SocketDev/skills
+```
+
+2. Or manually copy the [`agents/AGENTS.md`](agents/AGENTS.md) file into your agent's instructions/context directory. This file contains a summary of all available skills and their locations.
+
+3. If your agent supports MCP servers, point it to `https://socket.dev/mcp` for access to Socket's API tools (review, scan, etc.).
+
 ## Skills
 
 This repository contains security-focused skills for dependency management. You can also contribute your own skills to the repository.
@@ -89,8 +126,10 @@ This repository contains security-focused skills for dependency management. You 
 <!-- BEGIN_SKILLS_TABLE -->
 | Name | Description | Documentation |
 |------|-------------|---------------|
+| `audit` | Generate compliance reports, SBOMs, and license audits for your project. Produces CycloneDX/SPDX output, aggregates license usage, flags problematic licenses, and creates a compliance summary using Socket data. | [SKILL.md](skills/audit/SKILL.md) |
 | `cleanup` | Find and remove unused dependencies from your project. Scans the codebase for import and usage patterns across npm, PyPI, Cargo, Bundler, Maven, NuGet, Go, pnpm, and Yarn to identify dependencies that are no longer referenced. | [SKILL.md](skills/cleanup/SKILL.md) |
-| `patch` | Patch one or more security vulnerabilities and set up patching infrastructure within a repository. Find safe upgrade paths, apply fixes, and configure automated patching workflows. | [SKILL.md](skills/patch/SKILL.md) |
+| `investigate` | Investigate a security incident — given a CVE, advisory, or compromised package, determine exposure, assess blast radius, check for indicators of compromise, and recommend remediation. | [SKILL.md](skills/investigate/SKILL.md) |
+| `patch` | Apply Socket's binary-level security patches without changing dependency versions, and set up automated patching infrastructure. Uses socket-patch apply to fix vulnerabilities in-place across CI/CD and local development. | [SKILL.md](skills/patch/SKILL.md) |
 | `review` | Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches. | [SKILL.md](skills/review/SKILL.md) |
 | `scan` | Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, and performs Tier 1 reachability analysis for enterprise customers. | [SKILL.md](skills/scan/SKILL.md) |
 | `setup` | Set up Socket — prompt for API key, install the CLI, authenticate, configure CI/CD for firewall or patch modes across GitHub, GitLab, Bitbucket, and other systems. | [SKILL.md](skills/setup/SKILL.md) |

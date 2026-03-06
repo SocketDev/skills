@@ -49,6 +49,8 @@ export class McpClient {
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+      "User-Agent": "socket-skills-test/1.0.0",
       Authorization: `Bearer ${this.apiKey}`,
     };
 
@@ -144,6 +146,8 @@ export class McpClient {
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+      "User-Agent": "socket-skills-test/1.0.0",
       Authorization: `Bearer ${this.apiKey}`,
     };
 

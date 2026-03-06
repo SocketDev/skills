@@ -24,7 +24,7 @@
       "name": "patch",
       "source": "./skills/patch",
       "skills": "./",
-      "description": "Patch one or more security vulnerabilities and set up patching infrastructure within a repository. Find safe upgrade paths, apply fixes, and configure automated patching workflows."
+      "description": "Apply Socket's binary-level security patches without changing dependency versions, and set up automated patching infrastructure. Uses socket-patch apply to fix vulnerabilities in-place across CI/CD and local development."
     },
     {
       "name": "setup",
@@ -43,6 +43,18 @@
       "source": "./skills/cleanup",
       "skills": "./",
       "description": "Find and remove unused dependencies from your project. Scans the codebase for import and usage patterns across npm, PyPI, Cargo, Bundler, Maven, NuGet, Go, pnpm, and Yarn to identify dependencies that are no longer referenced."
+    },
+    {
+      "name": "audit",
+      "source": "./skills/audit",
+      "skills": "./",
+      "description": "Generate compliance reports, SBOMs, and license audits for your project. Produces CycloneDX/SPDX output, aggregates license usage, flags problematic licenses, and creates a compliance summary using Socket data."
+    },
+    {
+      "name": "investigate",
+      "source": "./skills/investigate",
+      "skills": "./",
+      "description": "Investigate a security incident — given a CVE, advisory, or compromised package, determine exposure, assess blast radius, check for indicators of compromise, and recommend remediation."
     }
   ]
 }

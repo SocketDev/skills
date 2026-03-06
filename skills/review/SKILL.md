@@ -64,6 +64,13 @@ If `WebFetch` is unavailable or fails, note that the report is based on MCP data
 
 Analyze the package across five dimensions. **Always check malware first.**
 
+Each dimension draws from different data sources:
+- **3a. Malware** — Socket MCP `review` tool alerts + socket.dev package page (WebFetch)
+- **3b. Vulnerabilities** — Socket MCP `review` tool CVE data
+- **3c. Dependency Tree** — Socket MCP `review` tool dependency counts + socket.dev page (WebFetch)
+- **3d. Maintenance Health** — socket.dev package page (WebFetch) + GitHub API (for commit activity and issue counts)
+- **3e. Author & Maintainer Trust** — Socket MCP `review` tool maintainer data + socket.dev page (WebFetch)
+
 ### 3a. Malware (CHECK FIRST)
 
 If the package is flagged as malware, **STOP** and report immediately with a prominent warning. Do not continue to other dimensions until the malware finding is clearly communicated.
@@ -132,9 +139,11 @@ To research alternatives:
 
 ## Step 5 — Check for Socket Patches
 
+**What are Socket patches?** Socket patches are binary-level fixes applied directly to installed packages without changing their version numbers. They fix known vulnerabilities in-place, which is useful when an upstream fix doesn't exist yet or when upgrading would introduce breaking changes.
+
 - Check the review data for available Socket patches or overrides
 - If patches are available, mention the patched version and link to the socket.dev page
-- Cross-reference the `patch` and `update` skills — remind the user they can apply patches with `/patch` or run a security-audited upgrade with `/update`
+- Cross-reference the `patch` and `update` skills — remind the user they can apply patches with `/patch` (binary-level, no version change) or run a security-audited upgrade with `/update` (version upgrade with code migration)
 
 ## Output Format
 
@@ -181,6 +190,13 @@ Include the comparison table from Step 4.
 A clear, actionable recommendation: safe to use, use with caution (with reasons), or avoid (with reasons and alternatives).
 
 **Source:** [socket.dev/{ecosystem}/package/{name}](https://socket.dev/{ecosystem}/package/{name}/overview)
+
+## Error Handling
+
+- **MCP `review` tool returns no data**: The package may not exist in the specified ecosystem, or the package name may be misspelled. Verify the exact package name and ecosystem. For scoped npm packages, include the full scope (e.g., `@babel/core`).
+- **WebFetch fails on socket.dev page**: Fall back to MCP data only. Note in the report that the review is based on MCP data and include the socket.dev URL for the user to check manually.
+- **Package not found in Socket's database**: Socket may not index all packages in all ecosystems. Note this limitation and suggest checking the package's own repository and issue tracker directly.
+- **GitHub API rate limit**: If GitHub API calls for maintenance data are rate-limited, skip the maintenance health dimension and note it in the report.
 
 ## Tips
 
