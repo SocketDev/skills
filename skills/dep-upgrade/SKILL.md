@@ -129,7 +129,7 @@ Iterate until everything passes:
 
 1. **Build the project** to check for compile/type errors
 2. **Run the full test suite** and fix any failing tests
-3. **Run the `/research-scan` skill** to confirm no new vulnerabilities were introduced by the upgrades
+3. **Run the `/scan` skill** to confirm no new vulnerabilities were introduced by the upgrades
 4. **Re-run `socket fix --all --no-apply-fixes --json`** to verify no fixable vulnerabilities remain
 
 If tests fail after fixing, investigate each failure:
@@ -149,7 +149,7 @@ Fixing all vulnerabilities in a Node.js project (success case):
    - Major bump applied → 2 test failures in route tests
    - Fix route handler code to match new Express API
    - Tests pass → commit → reports success
-6. All subagents succeeded → run `/research-scan` skill → no new vulnerabilities
+6. All subagents succeeded → run `/scan` skill → no new vulnerabilities
 
 Failure case — main agent stops on first failure:
 
@@ -204,6 +204,6 @@ Use `/dep-upgrade` when you want full version upgrades. Use `/dep-patch` when yo
 - **Stop on failure** — if any single update cannot be completed, halt the entire process and report to the user rather than continuing with a broken state
 - Commit after each successful update so progress is saved and failures can be cleanly reverted
 - Use `--minimum-release-age 2d` to avoid upgrading to freshly-published versions
-- Combine with the `/research-inspect` skill to compare security profiles before and after upgrades
-- After all fixes are applied, run the `/research-scan` skill to verify no new risks were introduced
+- Combine with the `/inspect` skill to compare security profiles before and after upgrades
+- After all fixes are applied, run the `/scan` skill to verify no new risks were introduced
 - For monorepos, use `--include` and `--exclude` to target specific workspaces

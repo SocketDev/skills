@@ -9,28 +9,28 @@
   },
   "plugins": [
     {
-      "name": "research-scan",
-      "source": "./skills/research-scan",
+      "name": "scan",
+      "source": "./skills/scan",
       "skills": "./",
       "description": "Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, performs Tier 1 reachability analysis for enterprise customers, and provides license compliance auditing with SBOM generation."
     },
     {
-      "name": "research-inspect",
-      "source": "./skills/research-inspect",
+      "name": "inspect",
+      "source": "./skills/inspect",
       "skills": "./",
       "description": "Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches."
-    },
-    {
-      "name": "dep-patch",
-      "source": "./skills/dep-patch",
-      "skills": "./",
-      "description": "Apply Socket's binary-level security patches without changing dependency versions. Uses socket-patch apply to fix vulnerabilities in-place. For CI/CD and infrastructure setup, use the /setup skill."
     },
     {
       "name": "setup",
       "source": "./skills/setup",
       "skills": "./",
       "description": "Set up Socket — prompt for API key, install the CLI, authenticate, configure policies and tokens, set up CI/CD for firewall or patch modes across GitHub, GitLab, Bitbucket, and other systems."
+    },
+    {
+      "name": "dep-patch",
+      "source": "./skills/dep-patch",
+      "skills": "./",
+      "description": "Apply Socket's binary-level security patches without changing dependency versions. Uses socket-patch apply to fix vulnerabilities in-place. For CI/CD and infrastructure setup, use the /setup skill."
     },
     {
       "name": "dep-upgrade",
@@ -45,8 +45,14 @@
       "description": "Evaluate and remove a single unused dependency from your project. Searches the entire codebase for all usages (imports, requires, config refs, scripts, type packages, indirect usage), reports findings, and performs full removal with verification."
     },
     {
-      "name": "repair",
-      "source": "./skills/repair",
+      "name": "dep-replace",
+      "source": "./skills/dep-replace",
+      "skills": "./",
+      "description": "Replace a dependency with an alternative package, eliminate it via code rewrite, or use socket-optimize for optimized replacements."
+    },
+    {
+      "name": "fix",
+      "source": "./skills/fix",
       "skills": "./",
       "description": "Holistic dependency repair — orchestrates cleanup, patching, and upgrades in a single workflow with three aggressiveness levels (conservative, cautious, full)."
     }

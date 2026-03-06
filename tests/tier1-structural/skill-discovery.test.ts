@@ -6,7 +6,7 @@ import { parseFrontmatter } from "../../scripts/lib/frontmatter";
 const ROOT = path.resolve(__dirname, "../..");
 const SKILLS_DIR = path.join(ROOT, "skills");
 
-const EXPECTED_SKILLS = ["dep-cleanup", "dep-patch", "dep-upgrade", "repair", "research-inspect", "research-scan", "setup"];
+const EXPECTED_SKILLS = ["dep-cleanup", "dep-patch", "dep-replace", "dep-upgrade", "fix", "inspect", "scan", "setup"];
 
 function getSkillDirs(): string[] {
   return fs

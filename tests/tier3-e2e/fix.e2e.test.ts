@@ -3,7 +3,7 @@ import { getAdapter, type AgentAdapter } from "../helpers/agent-adapters/index.j
 import { copyFixture, cleanupTestRepo, buildSkillPrompt } from "../helpers/test-repos.js";
 import { expectScoreAboveThreshold } from "../helpers/assertions.js";
 
-describe("Repair E2E", () => {
+describe("Fix E2E", () => {
   let adapter: AgentAdapter;
   let testDir: string;
 
@@ -28,7 +28,7 @@ describe("Repair E2E", () => {
   it("identifies repair levels and environment", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "repair",
+        "fix",
         "Analyze this project and describe what each repair level (conservative, cautious, full) would do. Detect the ecosystem and list the dependencies. Do not make any changes."
       ),
       workingDir: testDir,
@@ -45,7 +45,7 @@ describe("Repair E2E", () => {
   it("performs conservative repair analysis", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "repair",
+        "fix",
         "Run a conservative (Level 1) repair analysis on this project. Identify which dependencies appear unused and which patches are available. Do not actually remove or patch anything — just report what you would do."
       ),
       workingDir: testDir,
@@ -62,7 +62,7 @@ describe("Repair E2E", () => {
   it("proposes a risky change for level 2", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "repair",
+        "fix",
         "If this project were at repair Level 2 (cautious), what single risky change would you propose? Look at the dependencies for known vulnerabilities and suggest the highest-value upgrade. Do not apply it."
       ),
       workingDir: testDir,

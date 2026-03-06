@@ -1,13 +1,14 @@
 ---
-name: repair
-description: Holistic dependency repair — orchestrates cleanup, patching, and upgrades
-  in a single workflow with three aggressiveness levels (conservative, cautious, full).
-  Delegates to /dep-cleanup, /dep-patch, and /dep-upgrade as subroutines.
+name: fix
+description: Holistic dependency repair — orchestrates cleanup, replacement, patching,
+  and upgrades in a single workflow with three aggressiveness levels (conservative,
+  cautious, full). Delegates to /dep-cleanup, /dep-replace, /dep-patch, and /dep-upgrade
+  as subroutines.
 ---
 
-# Repair
+# Fix
 
-Holistic dependency repair — orchestrate `/dep-cleanup`, `/dep-patch`, and `/dep-upgrade` into a single phased workflow. Choose from three aggressiveness levels (conservative, cautious, full) to control how far the repair goes.
+Holistic dependency repair — orchestrate `/dep-cleanup`, `/dep-replace`, `/dep-patch`, and `/dep-upgrade` into a single phased workflow. Choose from three aggressiveness levels (conservative, cautious, full) to control how far the repair goes.
 
 This skill is an **orchestrator**. It does not have its own tools — it delegates every concrete action to the dep-* skills.
 
@@ -97,8 +98,9 @@ Execute Phase 1a (unused dep removal) and Phase 1b (binary patches) as described
 After Level 1 completes, identify the single highest-value change that carries some risk. Prioritize in this order:
 
 1. **Critical/high CVE upgrade** — a dependency with a known critical or high severity vulnerability that requires a version bump (use `socket fix --all --no-apply-fixes --json` to discover)
-2. **Ambiguous unused dependency** — a package that is *probably* unused but was excluded from Phase 1a due to ambiguity (e.g., a `@types/*` package whose base package is not used, or a build plugin that may no longer be needed)
-3. **Safe minor version bump** — a dependency with a minor/patch update available that fixes a medium-severity issue
+2. **Replacement of a flagged dependency** — a dependency with a low Socket score or known maintenance issues that should be swapped for a better alternative (use `/dep-replace`)
+3. **Ambiguous unused dependency** — a package that is *probably* unused but was excluded from Phase 1a due to ambiguity (e.g., a `@types/*` package whose base package is not used, or a build plugin that may no longer be needed)
+4. **Safe minor version bump** — a dependency with a minor/patch update available that fixes a medium-severity issue
 
 Present the proposed change to the user with full context:
 
@@ -142,6 +144,13 @@ Aggressive repair. Apply everything possible, skip and continue on individual fa
 4. **Revert removals that break the build** — if removing a package causes failures, re-add it and mark it as "still needed"
 5. Commit after each successful removal
 
+### Phase 3b2: Replace Flagged Dependencies
+
+1. Review scan results for dependencies with low Socket scores, unmaintained status, or known supply-chain risks
+2. For each flagged dependency, run `/dep-replace` to find and execute a replacement
+3. **Skip and continue on failure** — if a replacement cannot be completed (no suitable alternative, migration too complex, tests fail), log it and move on
+4. Commit after each successful replacement
+
 ### Phase 3c: Patch Everything Remaining
 
 1. Run `socket-patch apply` on everything remaining
@@ -161,7 +170,7 @@ Aggressive repair. Apply everything possible, skip and continue on individual fa
 
 After all phases complete (regardless of level):
 
-1. Run `/research-scan` to get a fresh security scan
+1. Run `/scan` to get a fresh security scan
 2. Compare findings against the pre-repair state
 3. Report a summary:
 
@@ -196,6 +205,6 @@ Repair Complete (Level 2 — Cautious)
 - Level 3 is best for major cleanup efforts where you're prepared to review and test extensively
 - Each level builds on the previous one, so you can start conservative and escalate
 - All changes are committed individually, making it easy to revert any single change
-- Run `/research-scan` before and after repair to measure improvement
+- Run `/scan` before and after repair to measure improvement
 - For monorepos, consider running repair on each workspace individually
 - Combine with `/setup` to ensure the Socket CLI is properly configured before starting
