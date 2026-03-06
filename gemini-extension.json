@@ -2,10 +2,5 @@
   "name": "socket-skills",
   "description": "Provides access to Socket Security Skills.",
   "version": "1.0.0",
-  "contextFileName": "agents/AGENTS.md",
-  "mcpServers": {
-    "socket-skills": {
-      "httpUrl": "https://socket.dev/mcp"
-    }
-  }
+  "contextFileName": "agents/AGENTS.md"
 }

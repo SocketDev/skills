@@ -1,9 +1,9 @@
 ---
-name: review
+name: inspect
 description: Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches.
 ---
 
-# Review
+# Inspect
 
 Research a package before you depend on it. This skill pulls every available signal from Socket — scores, alerts, malware verdicts, CVEs, and supply-chain risk indicators — checks the socket.dev package page for additional context, evaluates alternatives when warranted, and surfaces available Socket patches. Use it to make an informed decision before adding, keeping, or replacing any dependency.
 
@@ -17,11 +17,31 @@ Research a package before you depend on it. This skill pulls every available sig
 - Check if Socket has patches available for a vulnerable package
 - Get a comprehensive supply-chain risk report
 
-## Step 1 — Call the Socket MCP Review Tool
+## Step 1 — Fetch Package Data via the Socket Batch PURL API
 
-Use the Socket MCP server `review` tool with the package name, ecosystem, and optionally a version.
+Query the Socket Batch PURL REST API with the package's PURL (Package URL) to retrieve scores, alerts, CVEs, and metadata.
 
 **Supported ecosystems:** npm, pypi, go, maven, nuget, rubygems, cargo
+
+**API call:**
+
+```
+curl -X POST https://api.socket.dev/v0/purl \
+  -H "Authorization: Bearer $SOCKET_SECURITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"purls": ["pkg:<ecosystem>/<name>@<version>"]}'
+```
+
+For example, to inspect `lodash@4.17.21` on npm:
+
+```
+curl -X POST https://api.socket.dev/v0/purl \
+  -H "Authorization: Bearer $SOCKET_SECURITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"purls": ["pkg:npm/lodash@4.17.21"]}'
+```
+
+If `SOCKET_SECURITY_API_KEY` is not set, try `npx socket npm/<name>` as a fallback.
 
 Extract **all** returned data:
 - Overall score and category scores (security, quality, maintenance, license)
@@ -30,13 +50,6 @@ Extract **all** returned data:
 - Dependency counts (direct and transitive)
 - Maintainer and author information
 - License identifier
-
-### Example Calls
-
-- "Review the npm package `lodash`"
-- "What's the security score for `requests` on PyPI?"
-- "Check if `left-pad@1.3.0` has any known vulnerabilities"
-- "Compare security profiles of `express` vs `fastify`"
 
 ## Step 2 — Check the socket.dev Package Page
 
@@ -56,20 +69,20 @@ Use `WebFetch` to visit the page and extract:
 - Score breakdown across all categories
 - Full alert list with descriptions
 - Dependency graph summary
-- Any additional context not present in the MCP response
+- Any additional context not present in the API response
 
-If `WebFetch` is unavailable or fails, note that the report is based on MCP data only and include the URL so the user can check manually.
+If `WebFetch` is unavailable or fails, note that the report is based on API data only and include the URL so the user can check manually.
 
 ## Step 3 — Evaluate Supply Chain Risk
 
 Analyze the package across five dimensions. **Always check malware first.**
 
 Each dimension draws from different data sources:
-- **3a. Malware** — Socket MCP `review` tool alerts + socket.dev package page (WebFetch)
-- **3b. Vulnerabilities** — Socket MCP `review` tool CVE data
-- **3c. Dependency Tree** — Socket MCP `review` tool dependency counts + socket.dev page (WebFetch)
+- **3a. Malware** — Batch PURL API alerts + socket.dev package page (WebFetch)
+- **3b. Vulnerabilities** — Batch PURL API CVE data
+- **3c. Dependency Tree** — Batch PURL API dependency counts + socket.dev page (WebFetch)
 - **3d. Maintenance Health** — socket.dev package page (WebFetch) + GitHub API (for commit activity and issue counts)
-- **3e. Author & Maintainer Trust** — Socket MCP `review` tool maintainer data + socket.dev page (WebFetch)
+- **3e. Author & Maintainer Trust** — Batch PURL API maintainer data + socket.dev page (WebFetch)
 
 ### 3a. Malware (CHECK FIRST)
 
@@ -128,7 +141,7 @@ Research alternatives when any of the following conditions are met:
 To research alternatives:
 1. Identify the package's core functionality
 2. Search for well-known alternatives providing similar functionality
-3. Run the Socket MCP `review` tool on the top 3-5 alternatives
+3. Query the Socket Batch PURL API for the top 3-5 alternatives
 4. Present a comparison table:
 
 | Package | Socket Score | Vulnerabilities | Dependencies | Last Published |
@@ -141,9 +154,9 @@ To research alternatives:
 
 **What are Socket patches?** Socket patches are binary-level fixes applied directly to installed packages without changing their version numbers. They fix known vulnerabilities in-place, which is useful when an upstream fix doesn't exist yet or when upgrading would introduce breaking changes.
 
-- Check the review data for available Socket patches or overrides
+- Check the API response data for available Socket patches or overrides
 - If patches are available, mention the patched version and link to the socket.dev page
-- Cross-reference the `patch` and `update` skills — remind the user they can apply patches with `/patch` (binary-level, no version change) or run a security-audited upgrade with `/update` (version upgrade with code migration)
+- Cross-reference the `patch` and `upgrade` skills — remind the user they can apply patches with `/patch` (binary-level, no version change) or run a security-audited upgrade with `/upgrade` (version upgrade with code migration)
 
 ## Output Format
 
@@ -193,8 +206,8 @@ A clear, actionable recommendation: safe to use, use with caution (with reasons)
 
 ## Error Handling
 
-- **MCP `review` tool returns no data**: The package may not exist in the specified ecosystem, or the package name may be misspelled. Verify the exact package name and ecosystem. For scoped npm packages, include the full scope (e.g., `@babel/core`).
-- **WebFetch fails on socket.dev page**: Fall back to MCP data only. Note in the report that the review is based on MCP data and include the socket.dev URL for the user to check manually.
+- **Batch PURL API returns no data**: The package may not exist in the specified ecosystem, or the package name may be misspelled. Verify the exact package name and ecosystem. For scoped npm packages, include the full scope (e.g., `@babel/core`). If `SOCKET_SECURITY_API_KEY` is not set, fall back to `npx socket npm/<name>` or the socket.dev package page.
+- **WebFetch fails on socket.dev page**: Fall back to API data only. Note in the report that the review is based on API data and include the socket.dev URL for the user to check manually.
 - **Package not found in Socket's database**: Socket may not index all packages in all ecosystems. Note this limitation and suggest checking the package's own repository and issue tracker directly.
 - **GitHub API rate limit**: If GitHub API calls for maintenance data are rate-limited, skip the maintenance health dimension and note it in the report.
 
@@ -204,7 +217,7 @@ A clear, actionable recommendation: safe to use, use with caution (with reasons)
 - Single-maintainer packages carry higher supply-chain risk
 - Large transitive dependency trees increase attack surface
 - If a package is flagged as malware, do NOT install it — recommend immediate removal if already present
-- Use review results to inform decisions with the `update`, `patch`, and `scan` skills
+- Use inspect results to inform decisions with the `upgrade`, `patch`, and `scan` skills
 - Weigh Socket score and maintenance health over download count alone
 - Re-review periodically — a package's security posture changes over time
 - Prefer Socket patches over manual version pinning when available

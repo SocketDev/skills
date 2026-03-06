@@ -18,7 +18,13 @@ Find and remove unused dependencies from your project by scanning the codebase f
 
 ## Step 1: Detect Ecosystems
 
-Scan the project root for manifest and lock files to determine which ecosystems are in use:
+Run the ecosystem detection helper to identify project ecosystems:
+
+```
+npx tsx scripts/helpers/detect-ecosystems.ts
+```
+
+Or manually scan the project root for manifest and lock files to determine which ecosystems are in use:
 
 | Ecosystem | Manifest Files |
 |-----------|---------------|
@@ -36,7 +42,13 @@ For npm, pnpm, and yarn: differentiate by which lock file is present (`package-l
 
 ## Step 2: Collect Dependencies
 
-Read all manifest files and extract every declared dependency name. Separate production and dev dependencies where the ecosystem supports it:
+Run the dependency parser helper to extract all declared dependencies:
+
+```
+npx tsx scripts/helpers/parse-dependencies.ts
+```
+
+Or read all manifest files manually and extract every declared dependency name. Separate production and dev dependencies where the ecosystem supports it:
 
 - **npm/pnpm/yarn**: `dependencies` vs `devDependencies` (also `peerDependencies`, `optionalDependencies`)
 - **PyPI**: main vs extras/dev in `pyproject.toml`; separate `requirements-dev.txt` files
@@ -48,7 +60,13 @@ Read all manifest files and extract every declared dependency name. Separate pro
 
 ## Step 3: Search for Usage
 
-For each dependency, search the codebase for import, require, or usage patterns. Mark a dependency as "used" if any pattern matches.
+For each dependency, search for usage with the helper script:
+
+```
+npx tsx scripts/helpers/search-usage.ts --package <name> --ecosystem <eco>
+```
+
+Or manually search the codebase for import, require, or usage patterns. Mark a dependency as "used" if any pattern matches.
 
 ### Search Patterns by Ecosystem
 
@@ -129,7 +147,7 @@ For ecosystems that require manual file editing (PyPI, Bundler, Maven, Go), make
 
 ## Step 7: Verify
 
-After removal, verify the project still works:
+Follow the standard build & test verification workflow (see `skills/_shared/verify-build.md`):
 
 1. **Build the project** using its standard build command
 2. **Run the test suite** to catch any runtime dependency on a removed package

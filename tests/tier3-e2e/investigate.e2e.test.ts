@@ -6,7 +6,7 @@ import {
   expectScoreAboveThreshold,
 } from "../helpers/assertions.js";
 
-describe("Update E2E", () => {
+describe("Investigate E2E", () => {
   let adapter: AgentAdapter;
   let testDir: string;
 
@@ -28,28 +28,11 @@ describe("Update E2E", () => {
     if (testDir) cleanupTestRepo(testDir);
   });
 
-  it("discovers vulns and suggests updates", { timeout: 300_000 }, async () => {
+  it("investigates a known CVE affecting lodash", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "update",
-        "Read this project's package.json and identify which dependencies have known vulnerabilities. lodash 4.17.20 is known to have CVEs — what version should it be updated to? Suggest safe upgrade versions for any vulnerable packages. Do not run socket fix. You can use npm audit if available, but primarily rely on reading the package.json and your knowledge of CVEs."
-      ),
-      workingDir: testDir,
-      timeoutMs: 240_000,
-    });
-
-    expectScoreAboveThreshold(
-      response,
-      ["lodash", "vulnerab", "update", "fix", "version"],
-      0.4
-    );
-  });
-
-  it("identifies lodash upgrade path", { timeout: 300_000 }, async () => {
-    const response = await adapter.runPrompt({
-      prompt: buildSkillPrompt(
-        "update",
-        "What version should lodash be updated to for security? Try `npx socket npm/lodash` to check, but if the command fails, use your knowledge of lodash CVEs to recommend a safe version."
+        "investigate",
+        "Investigate whether this project is affected by CVE-2021-23337 (lodash command injection). Check the package.json for the installed version and determine exposure. Produce an incident report."
       ),
       workingDir: testDir,
       timeoutMs: 240_000,
@@ -58,7 +41,24 @@ describe("Update E2E", () => {
     expectOutputContains(response, ["lodash"]);
     expectScoreAboveThreshold(
       response,
-      ["lodash", "version", "upgrade", "update", "fix", "security"],
+      ["lodash", "CVE", "vulnerab", "version", "affected", "remediation"],
+      0.4
+    );
+  });
+
+  it("assesses blast radius of a vulnerability", { timeout: 300_000 }, async () => {
+    const response = await adapter.runPrompt({
+      prompt: buildSkillPrompt(
+        "investigate",
+        "The lodash package in this project has known vulnerabilities. Assess the blast radius: which files use lodash? Is it in production code? What is the recommended remediation?"
+      ),
+      workingDir: testDir,
+      timeoutMs: 240_000,
+    });
+
+    expectScoreAboveThreshold(
+      response,
+      ["lodash", "import", "require", "production", "upgrade", "fix"],
       0.4
     );
   });

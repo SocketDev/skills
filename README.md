@@ -92,7 +92,6 @@ gemini extensions install https://github.com/SocketDev/skills.git --consent
 This repository includes Cursor plugin manifests:
 
 - `.cursor-plugin/plugin.json`
-- `.mcp.json` (configured with the Socket MCP server URL)
 
 Install from repository URL (or local checkout) via the Cursor plugin flow.
 
@@ -114,7 +113,7 @@ npx skills add SocketDev/skills
 
 2. Or manually copy the [`agents/AGENTS.md`](agents/AGENTS.md) file into your agent's instructions/context directory. This file contains a summary of all available skills and their locations.
 
-3. If your agent supports MCP servers, point it to `https://socket.dev/mcp` for access to Socket's API tools (review, scan, etc.).
+3. Skills use the Socket CLI and Batch PURL API directly — no MCP server required.
 
 ## Skills
 
@@ -128,12 +127,12 @@ This repository contains security-focused skills for dependency management. You 
 |------|-------------|---------------|
 | `audit` | Generate compliance reports, SBOMs, and license audits for your project. Produces CycloneDX/SPDX output, aggregates license usage, flags problematic licenses, and creates a compliance summary using Socket data. | [SKILL.md](skills/audit/SKILL.md) |
 | `cleanup` | Find and remove unused dependencies from your project. Scans the codebase for import and usage patterns across npm, PyPI, Cargo, Bundler, Maven, NuGet, Go, pnpm, and Yarn to identify dependencies that are no longer referenced. | [SKILL.md](skills/cleanup/SKILL.md) |
+| `inspect` | Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches. | [SKILL.md](skills/inspect/SKILL.md) |
 | `investigate` | Investigate a security incident — given a CVE, advisory, or compromised package, determine exposure, assess blast radius, check for indicators of compromise, and recommend remediation. | [SKILL.md](skills/investigate/SKILL.md) |
 | `patch` | Apply Socket's binary-level security patches without changing dependency versions, and set up automated patching infrastructure. Uses socket-patch apply to fix vulnerabilities in-place across CI/CD and local development. | [SKILL.md](skills/patch/SKILL.md) |
-| `review` | Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches. | [SKILL.md](skills/review/SKILL.md) |
 | `scan` | Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, and performs Tier 1 reachability analysis for enterprise customers. | [SKILL.md](skills/scan/SKILL.md) |
 | `setup` | Set up Socket — prompt for API key, install the CLI, authenticate, configure CI/CD for firewall or patch modes across GitHub, GitLab, Bitbucket, and other systems. | [SKILL.md](skills/setup/SKILL.md) |
-| `update` | Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration. | [SKILL.md](skills/update/SKILL.md) |
+| `upgrade` | Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration. | [SKILL.md](skills/upgrade/SKILL.md) |
 <!-- END_SKILLS_TABLE -->
 
 ## Contributing

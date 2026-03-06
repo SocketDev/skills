@@ -50,7 +50,6 @@ export function buildSkillPrompt(skillName: string, userPrompt: string): string 
   const skillContent = fs.readFileSync(skillPath, "utf-8");
   return (
     `You have access to the following skill:\n\n${skillContent}\n\n` +
-    `You also have access to the Socket MCP server at https://socket.dev/mcp\n\n` +
     `Task: ${userPrompt}`
   );
 }

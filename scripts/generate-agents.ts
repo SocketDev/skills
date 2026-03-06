@@ -8,22 +8,21 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { parseFrontmatter } from "./lib/frontmatter";
+import {
+  collectSkills,
+  validateMarketplace,
+  type Skill,
+} from "./lib/validate-marketplace";
 
 const ROOT = path.resolve(__dirname, "..");
 const TEMPLATE_PATH = path.join(ROOT, "scripts", "AGENTS_TEMPLATE.md");
 const OUTPUT_PATH = path.join(ROOT, "agents", "AGENTS.md");
+const SKILLS_DIR = path.join(ROOT, "skills");
 const MARKETPLACE_PATH = path.join(ROOT, ".claude-plugin", "marketplace.json");
 const README_PATH = path.join(ROOT, "README.md");
 
 const README_TABLE_START = "<!-- BEGIN_SKILLS_TABLE -->";
 const README_TABLE_END = "<!-- END_SKILLS_TABLE -->";
-
-interface Skill {
-  name: string;
-  description: string;
-  path: string;
-}
 
 interface MarketplacePlugin {
   name: string;
@@ -41,29 +40,6 @@ interface Marketplace {
 
 function loadTemplate(): string {
   return fs.readFileSync(TEMPLATE_PATH, "utf-8");
-}
-
-function collectSkills(): Skill[] {
-  const skillsDir = path.join(ROOT, "skills");
-  if (!fs.existsSync(skillsDir)) return [];
-
-  const skills: Skill[] = [];
-  for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const skillMd = path.join(skillsDir, entry.name, "SKILL.md");
-    if (!fs.existsSync(skillMd)) continue;
-
-    const meta = parseFrontmatter(fs.readFileSync(skillMd, "utf-8"));
-    if (!meta.name || !meta.description) continue;
-
-    skills.push({
-      name: meta.name,
-      description: meta.description,
-      path: `skills/${entry.name}`,
-    });
-  }
-
-  return skills.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 }
 
 function render(template: string, skills: Skill[]): string {
@@ -149,50 +125,9 @@ function updateReadme(skills: Skill[]): boolean {
   return true;
 }
 
-function validateMarketplace(skills: Skill[]): string[] {
-  const errors: string[] = [];
-  const marketplace = loadMarketplace();
-  const plugins = marketplace.plugins;
-
-  const skillBySource = new Map<string, Skill>();
-  for (const s of skills) {
-    skillBySource.set(`./${s.path}`, s);
-  }
-
-  const pluginBySource = new Map<string, MarketplacePlugin>();
-  for (const p of plugins) {
-    pluginBySource.set(p.source, p);
-  }
-
-  for (const skill of skills) {
-    const expectedSource = `./${skill.path}`;
-    const plugin = pluginBySource.get(expectedSource);
-    if (!plugin) {
-      errors.push(
-        `Skill '${skill.name}' at '${skill.path}' is missing from marketplace.json`
-      );
-    } else if (plugin.name !== skill.name) {
-      errors.push(
-        `Name mismatch at '${expectedSource}': ` +
-          `SKILL.md='${skill.name}', marketplace.json='${plugin.name}'`
-      );
-    }
-  }
-
-  for (const plugin of plugins) {
-    if (!skillBySource.has(plugin.source)) {
-      errors.push(
-        `Marketplace plugin '${plugin.name}' at '${plugin.source}' has no SKILL.md`
-      );
-    }
-  }
-
-  return errors;
-}
-
 function main(): void {
   const template = loadTemplate();
-  const skills = collectSkills();
+  const skills = collectSkills(SKILLS_DIR);
   const output = render(template, skills);
 
   const outputDir = path.dirname(OUTPUT_PATH);
@@ -203,11 +138,11 @@ function main(): void {
   fs.writeFileSync(OUTPUT_PATH, output, "utf-8");
   console.log(`Wrote ${path.relative(ROOT, OUTPUT_PATH)} with ${skills.length} skills.`);
 
-  const errors = validateMarketplace(skills);
+  const errors = validateMarketplace(SKILLS_DIR, MARKETPLACE_PATH);
   if (errors.length > 0) {
     console.error("\nMarketplace.json validation errors:");
     for (const error of errors) {
-      console.error(`  - ${error}`);
+      console.error(`  - ${error.message}`);
     }
     process.exit(1);
   }

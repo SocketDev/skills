@@ -1,9 +1,9 @@
 ---
-name: update
+name: upgrade
 description: Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration.
 ---
 
-# Update
+# Upgrade
 
 Use the `socket fix` command to discover vulnerable dependencies, compute safe upgrade paths, and apply version updates — then fix any breaking changes in the codebase so everything builds and passes tests.
 
@@ -185,14 +185,14 @@ To manage context window limits without subagents:
 
 ## How This Differs from `/patch`
 
-| | `/update` (this skill) | `/patch` |
+| | `/upgrade` (this skill) | `/patch` |
 |---|---|---|
 | **Primary tool** | `socket fix` | `socket-patch apply` |
 | **What it does** | Upgrades dependency versions to fix CVEs | Applies binary-level patches without changing versions |
 | **Version changes?** | Yes | No |
 | **Code changes needed?** | Possibly (API migration for major bumps) | No |
 
-Use `/update` when you want full version upgrades. Use `/patch` when you need fixes without version churn.
+Use `/upgrade` when you want full version upgrades. Use `/patch` when you need fixes without version churn.
 
 ## Tips
 
@@ -204,6 +204,6 @@ Use `/update` when you want full version upgrades. Use `/patch` when you need fi
 - **Stop on failure** — if any single update cannot be completed, halt the entire process and report to the user rather than continuing with a broken state
 - Commit after each successful update so progress is saved and failures can be cleanly reverted
 - Use `--minimum-release-age 2d` to avoid upgrading to freshly-published versions
-- Combine with the `review` skill to compare security profiles before and after upgrades
+- Combine with the `inspect` skill to compare security profiles before and after upgrades
 - After all fixes are applied, run the `scan` skill to verify no new risks were introduced
 - For monorepos, use `--include` and `--exclude` to target specific workspaces

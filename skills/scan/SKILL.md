@@ -123,8 +123,8 @@ Reachability analysis generates a `.socket.facts.json` file in the project root 
 
 Based on scan results, cross-reference other skills to resolve issues:
 
-- **Vulnerabilities with available fixes** — use the `/update` skill to apply safe upgrades
-- **Packages needing deeper investigation** — use the `/review` skill to research specific packages
+- **Vulnerabilities with available fixes** — use the `/upgrade` skill to apply safe upgrades
+- **Packages needing deeper investigation** — use the `/inspect` skill to research specific packages
 - **Packages with Socket patches available** — use the `/patch` skill to apply security patches
 - **Unused dependencies** — use the `/cleanup` skill to remove packages that are no longer needed
 
@@ -140,8 +140,8 @@ Based on scan results, cross-reference other skills to resolve issues:
 
 - Always run a scan after adding, updating, or removing dependencies to verify the project's security posture
 - Use `--json` for machine-readable output that is easier to parse and summarize
-- Combine with the `review` skill for deep-dives into specific flagged packages
-- Combine with the `update` skill to fix vulnerabilities discovered during the scan
+- Combine with the `inspect` skill for deep-dives into specific flagged packages
+- Combine with the `upgrade` skill to fix vulnerabilities discovered during the scan
 - Enterprise customers should use reachability analysis to prioritize fixes — focus on `reachable` vulnerabilities first
 - Scan results are available in the Socket dashboard for team visibility and historical tracking
 - If `socket` is not installed, `npx socket` works as a drop-in replacement for all commands

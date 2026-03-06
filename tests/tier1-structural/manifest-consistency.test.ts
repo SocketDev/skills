@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
+import { validateMarketplace } from "../../scripts/lib/validate-marketplace";
 
 const ROOT = path.resolve(__dirname, "../..");
 const SKILLS_DIR = path.join(ROOT, "skills");
+const MARKETPLACE_PATH = path.join(ROOT, ".claude-plugin", "marketplace.json");
 
 interface MarketplacePlugin {
   name: string;
@@ -27,7 +29,7 @@ function loadJSON(relPath: string): unknown {
 function getSkillDirs(): string[] {
   return fs
     .readdirSync(SKILLS_DIR, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
+    .filter((e) => e.isDirectory() && !e.name.startsWith("_"))
     .map((e) => e.name)
     .sort();
 }
@@ -39,12 +41,8 @@ describe("Manifest Consistency", () => {
   const packageJson = loadJSON("package.json") as {
     version: string;
   };
-  const mcpJson = loadJSON(".mcp.json") as {
-    mcpServers: Record<string, { url: string }>;
-  };
   const geminiJson = loadJSON("gemini-extension.json") as {
     version: string;
-    mcpServers: Record<string, { httpUrl: string }>;
   };
   const agentsMd = fs.readFileSync(
     path.join(ROOT, "agents", "AGENTS.md"),
@@ -52,10 +50,12 @@ describe("Manifest Consistency", () => {
   );
 
   describe("marketplace.json", () => {
-    it("lists all discovered skill directories", () => {
-      const dirs = getSkillDirs();
-      const pluginNames = marketplace.plugins.map((p) => p.name).sort();
-      expect(pluginNames).toEqual(dirs);
+    it("passes shared validation (skills ↔ marketplace sync)", () => {
+      const errors = validateMarketplace(SKILLS_DIR, MARKETPLACE_PATH);
+      expect(
+        errors,
+        `Marketplace validation errors:\n${errors.map((e) => `  - ${e.message}`).join("\n")}`
+      ).toEqual([]);
     });
 
     it("every plugin source path resolves to a real SKILL.md", () => {
@@ -66,16 +66,6 @@ describe("Manifest Consistency", () => {
           `plugin '${plugin.name}' source '${plugin.source}' has no SKILL.md`
         ).toBe(true);
       }
-    });
-
-    it("has no duplicate plugin names", () => {
-      const names = marketplace.plugins.map((p) => p.name);
-      expect(names).toEqual([...new Set(names)]);
-    });
-
-    it("has no duplicate plugin sources", () => {
-      const sources = marketplace.plugins.map((p) => p.source);
-      expect(sources).toEqual([...new Set(sources)]);
     });
   });
 
@@ -96,24 +86,6 @@ describe("Manifest Consistency", () => {
           `AGENTS.md table does not list skill '${dir}'`
         ).toContain(`| ${dir} |`);
       }
-    });
-  });
-
-  describe("MCP server URL consistency", () => {
-    it(".mcp.json has a socket-skills server entry", () => {
-      expect(mcpJson.mcpServers["socket-skills"]).toBeDefined();
-      expect(mcpJson.mcpServers["socket-skills"].url).toBeTruthy();
-    });
-
-    it("gemini-extension.json has a socket-skills server entry", () => {
-      expect(geminiJson.mcpServers["socket-skills"]).toBeDefined();
-      expect(geminiJson.mcpServers["socket-skills"].httpUrl).toBeTruthy();
-    });
-
-    it(".mcp.json and gemini-extension.json agree on MCP server URL", () => {
-      const mcpUrl = mcpJson.mcpServers["socket-skills"].url;
-      const geminiUrl = geminiJson.mcpServers["socket-skills"].httpUrl;
-      expect(mcpUrl).toBe(geminiUrl);
     });
   });
 

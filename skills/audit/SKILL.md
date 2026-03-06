@@ -7,7 +7,7 @@ description: Generate compliance reports, SBOMs, and license audits for your pro
 
 # Audit
 
-Generate compliance reports for your project's dependencies. This skill produces Software Bills of Materials (SBOMs), aggregates license information, flags problematic licenses, and creates a compliance summary — using Socket's MCP server and CLI as the primary data source.
+Generate compliance reports for your project's dependencies. This skill produces Software Bills of Materials (SBOMs), aggregates license information, flags problematic licenses, and creates a compliance summary — using the Socket CLI and Batch PURL API as the primary data source.
 
 ## When to Use
 
@@ -35,9 +35,16 @@ This discovers all manifest and lock files and resolves the full dependency tree
 
 ## Step 2: Gather License Data
 
-For each dependency in the scan results, collect license information using the Socket MCP `review` tool:
+For each dependency in the scan results, collect license information using the Socket Batch PURL API:
 
-1. Call the MCP `review` tool for each direct dependency to get its license identifier
+```
+curl -X POST https://api.socket.dev/v0/purl \
+  -H "Authorization: Bearer $SOCKET_SECURITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"purls": ["pkg:<ecosystem>/<name>@<version>", ...]}'
+```
+
+1. Query the Batch PURL API for each direct dependency to get its license identifier
 2. Note the license for each package in the dependency tree
 3. Group dependencies by license type
 
@@ -149,7 +156,7 @@ Produce a human-readable compliance summary:
 ## Error Handling
 
 - **Socket CLI not installed**: Use `npx socket` as a drop-in replacement, or use the `/setup` skill to install permanently.
-- **MCP `review` tool rate-limited**: For large dependency trees, batch requests and add delays between calls. Focus on direct dependencies first.
+- **Batch PURL API rate-limited**: For large dependency trees, batch requests (the API accepts multiple PURLs per call) and add delays between calls. Focus on direct dependencies first.
 - **License not recognized**: If Socket returns an unknown or custom license, note it as "Unknown" and flag for manual review. Include the package's repository URL so the user can check the license file directly.
 - **SBOM generation fails for mixed ecosystems**: Generate separate SBOMs per ecosystem if a single combined SBOM causes issues.
 
@@ -160,4 +167,4 @@ Produce a human-readable compliance summary:
 - Combine with the `/scan` skill to get both security and compliance views of your dependencies
 - Re-audit after adding or updating dependencies — license information can change between versions
 - When flagging GPL dependencies, check if they are dev-only — GPL in devDependencies is generally lower risk for commercial projects
-- Use the `/review` skill to deep-dive into specific packages flagged during the audit
+- Use the `/inspect` skill to deep-dive into specific packages flagged during the audit

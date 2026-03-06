@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 /**
  * Generate Cursor plugin artifacts (.cursor-plugin/plugin.json, .mcp.json)
- * from .claude-plugin/plugin.json and gemini-extension.json.
+ * from .claude-plugin/plugin.json.
  */
 
 import * as fs from "fs";
@@ -10,13 +10,9 @@ import { parseFrontmatter } from "./lib/frontmatter";
 
 const ROOT = path.resolve(__dirname, "..");
 const CLAUDE_PLUGIN_MANIFEST = path.join(ROOT, ".claude-plugin", "plugin.json");
-const GEMINI_EXTENSION = path.join(ROOT, "gemini-extension.json");
 const CURSOR_PLUGIN_DIR = path.join(ROOT, ".cursor-plugin");
 const CURSOR_PLUGIN_MANIFEST = path.join(CURSOR_PLUGIN_DIR, "plugin.json");
 const CURSOR_MCP_CONFIG = path.join(ROOT, ".mcp.json");
-
-const DEFAULT_MCP_SERVER_NAME = "socket-skills";
-const DEFAULT_MCP_URL = "https://socket.dev/mcp";
 
 const PLUGIN_NAME_RE = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 
@@ -35,7 +31,7 @@ function collectSkillNames(): string[] {
   for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true }).sort((a, b) =>
     a.name.localeCompare(b.name)
   )) {
-    if (!entry.isDirectory()) continue;
+    if (!entry.isDirectory() || entry.name.startsWith("_")) continue;
     const skillMd = path.join(skillsDir, entry.name, "SKILL.md");
     if (!fs.existsSync(skillMd)) continue;
 
@@ -94,43 +90,9 @@ function buildCursorPluginManifest(): Record<string, unknown> {
   return manifest;
 }
 
-function extractMcpFromGemini(): [string, string] {
-  if (!fs.existsSync(GEMINI_EXTENSION)) {
-    return [DEFAULT_MCP_SERVER_NAME, DEFAULT_MCP_URL];
-  }
-
-  const data = loadJson(GEMINI_EXTENSION);
-  const servers = data.mcpServers;
-  if (typeof servers !== "object" || servers === null || Array.isArray(servers)) {
-    return [DEFAULT_MCP_SERVER_NAME, DEFAULT_MCP_URL];
-  }
-
-  const serverEntries = servers as Record<string, unknown>;
-  const serverName = Object.keys(serverEntries)[0];
-  if (!serverName) return [DEFAULT_MCP_SERVER_NAME, DEFAULT_MCP_URL];
-
-  const serverCfg = serverEntries[serverName];
-  if (typeof serverCfg !== "object" || serverCfg === null) {
-    return [DEFAULT_MCP_SERVER_NAME, DEFAULT_MCP_URL];
-  }
-
-  const cfg = serverCfg as Record<string, unknown>;
-  let url = (cfg.url as string) || (cfg.httpUrl as string) || DEFAULT_MCP_URL;
-  if (typeof url !== "string" || !url.trim()) {
-    url = DEFAULT_MCP_URL;
-  }
-
-  return [serverName, url];
-}
-
 function buildMcpConfig(): Record<string, unknown> {
-  const [serverName, url] = extractMcpFromGemini();
   return {
-    mcpServers: {
-      [serverName]: {
-        url,
-      },
-    },
+    mcpServers: {},
   };
 }
 

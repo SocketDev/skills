@@ -6,12 +6,12 @@ import { parseFrontmatter } from "../../scripts/lib/frontmatter";
 const ROOT = path.resolve(__dirname, "../..");
 const SKILLS_DIR = path.join(ROOT, "skills");
 
-const EXPECTED_SKILLS = ["audit", "cleanup", "investigate", "patch", "review", "scan", "setup", "update"];
+const EXPECTED_SKILLS = ["audit", "cleanup", "inspect", "investigate", "patch", "scan", "setup", "upgrade"];
 
 function getSkillDirs(): string[] {
   return fs
     .readdirSync(SKILLS_DIR, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
+    .filter((e) => e.isDirectory() && !e.name.startsWith("_"))
     .map((e) => e.name)
     .sort();
 }

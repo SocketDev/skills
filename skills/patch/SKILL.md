@@ -9,9 +9,9 @@ description: Apply Socket's binary-level security patches without changing depen
 
 Apply Socket's binary-level security patches to vulnerable dependencies **without changing their version numbers**. This skill uses `socket-patch apply` to fix known vulnerabilities in-place, and sets up the infrastructure (postinstall hooks, CI integration) to keep patches applied automatically.
 
-## How This Differs from `/update`
+## How This Differs from `/upgrade`
 
-| | `/patch` (this skill) | `/update` |
+| | `/patch` (this skill) | `/upgrade` |
 |---|---|---|
 | **Primary tool** | `socket-patch apply` | `socket fix` |
 | **What it does** | Applies binary-level patches without changing versions | Upgrades dependency versions to fix CVEs |
@@ -20,7 +20,7 @@ Apply Socket's binary-level security patches to vulnerable dependencies **withou
 | **Infrastructure setup?** | Yes (postinstall hooks, CI integration) | No |
 | **When to use** | You need fixes without version churn, or the upstream fix doesn't exist yet | You want to bring dependencies up to date |
 
-Use `/patch` when you want to fix vulnerabilities without risking breaking changes from version upgrades. Use `/update` when you want full version upgrades with automated code migration.
+Use `/patch` when you want to fix vulnerabilities without risking breaking changes from version upgrades. Use `/upgrade` when you want full version upgrades with automated code migration.
 
 ## When to Use
 
@@ -83,6 +83,12 @@ After patching, verify the project still works:
 To keep patches applied automatically, set up infrastructure so `socket-patch apply` runs after every dependency install.
 
 ### Scan Codebase for Install/Build Locations
+
+Run the CI detection helper to identify the project's CI/CD system:
+
+```
+npx tsx scripts/helpers/detect-ci.ts
+```
 
 Before configuring automation, scan the project to find ALL places where dependencies are installed and builds happen:
 
@@ -173,7 +179,7 @@ After setting up patching infrastructure:
 ## Error Handling
 
 - **`socket-patch` not found**: Install it using one of the methods in Step 1. For CI, ensure the install step runs before `socket-patch apply`.
-- **No patches available**: This means Socket doesn't have binary patches for the current vulnerabilities. Consider using the `/update` skill to upgrade versions instead.
+- **No patches available**: This means Socket doesn't have binary patches for the current vulnerabilities. Consider using the `/upgrade` skill to upgrade versions instead.
 - **Build fails after patching**: Run `socket-patch apply --dry-run` to identify which patch caused the issue. Report the failing patch so the user can decide whether to skip it.
 - **Permission errors**: Ensure write access to `node_modules/` or the equivalent dependency directory.
 
@@ -184,4 +190,4 @@ After setting up patching infrastructure:
 - For monorepos, use `patch-cwd` to target specific directories
 - Commit `.socket/manifest.json` to track which patches are applied
 - After patching, use the `/scan` skill to verify no residual vulnerabilities remain
-- Combine with the `/update` skill for vulnerabilities that don't have binary patches available
+- Combine with the `/upgrade` skill for vulnerabilities that don't have binary patches available

@@ -8,7 +8,7 @@ const SKILLS_DIR = path.join(ROOT, "skills");
 function getSkillDirs(): string[] {
   return fs
     .readdirSync(SKILLS_DIR, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
+    .filter((e) => e.isDirectory() && !e.name.startsWith("_"))
     .map((e) => e.name)
     .sort();
 }

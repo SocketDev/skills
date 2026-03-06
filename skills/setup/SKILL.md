@@ -41,6 +41,14 @@ description: Set up Socket — prompt for API key, install the CLI, authenticate
 - Route to the appropriate section(s) below
 
 ## Step 5: Detect SCM and CI System
+
+Run the CI detection helper for automated detection:
+
+```
+npx tsx scripts/helpers/detect-ci.ts
+```
+
+Or manually detect:
 - Run `git remote -v` to detect the SCM:
   - github.com → GitHub
   - gitlab.com or self-hosted GitLab → GitLab
@@ -121,6 +129,6 @@ The `/patch` skill covers GitHub Actions, GitLab CI, Bitbucket Pipelines, and ge
 - `socket-patch apply` does not require an API key.
 - Use `SocketDev/action@v1` (correct casing) in GitHub workflow files.
 - For monorepos, use `patch-cwd` to target specific directories.
-- After setup, use the `/scan` skill for a first audit and the `/review` skill for package inspection.
+- After setup, use the `/scan` skill for a first audit and the `/inspect` skill for package inspection.
 - For GitHub repos, consider also installing the Socket Security GitHub App
   for automatic PR scanning.

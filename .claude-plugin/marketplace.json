@@ -15,8 +15,8 @@
       "description": "Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, and performs Tier 1 reachability analysis for enterprise customers."
     },
     {
-      "name": "review",
-      "source": "./skills/review",
+      "name": "inspect",
+      "source": "./skills/inspect",
       "skills": "./",
       "description": "Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches."
     },
@@ -33,8 +33,8 @@
       "description": "Set up Socket — prompt for API key, install the CLI, authenticate, configure CI/CD for firewall or patch modes across GitHub, GitLab, Bitbucket, and other systems."
     },
     {
-      "name": "update",
-      "source": "./skills/update",
+      "name": "upgrade",
+      "source": "./skills/upgrade",
       "skills": "./",
       "description": "Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration."
     },

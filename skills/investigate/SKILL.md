@@ -28,8 +28,19 @@ Gather details about the security incident. The user may provide any of:
 - **Description** of the incident (e.g., "the colors npm package was compromised")
 
 If the user provides a description rather than specific identifiers, search for the relevant CVE/GHSA/package using:
-1. The Socket MCP `review` tool to look up the package
+1. The Socket Batch PURL API to look up the package (see below)
 2. WebSearch to find the relevant advisory and CVE details
+
+**Socket Batch PURL API call:**
+
+```
+curl -X POST https://api.socket.dev/v0/purl \
+  -H "Authorization: Bearer $SOCKET_SECURITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"purls": ["pkg:<ecosystem>/<name>@<version>"]}'
+```
+
+If `SOCKET_SECURITY_API_KEY` is not set, try `npx socket <ecosystem>/<name>` as a fallback.
 
 Record:
 - **Affected package**: name, ecosystem, affected version range
@@ -117,7 +128,7 @@ Based on the assessment, provide specific remediation steps:
 
 ### If Vulnerable and Fix Available
 
-1. **Immediate**: Use the `/update` skill to upgrade to the fix version
+1. **Immediate**: Use the `/upgrade` skill to upgrade to the fix version
    ```
    socket fix --id GHSA-xxxx-xxxx-xxxx --no-major-updates
    ```
@@ -131,7 +142,7 @@ Based on the assessment, provide specific remediation steps:
 
 1. **Check Socket patches**: Use the `/patch` skill — Socket may have a binary patch even when upstream hasn't released a fix
 2. **Mitigate**: Reduce exposure by limiting how the vulnerable code path is used
-3. **Replace**: Use the `/review` skill to evaluate alternative packages
+3. **Replace**: Use the `/inspect` skill to evaluate alternative packages
 4. **Remove**: Use the `/cleanup` skill if the dependency is unused or can be removed
 5. **Monitor**: Set up alerts for when a fix is released
 
@@ -191,5 +202,5 @@ Produce a structured incident report:
 - For high-profile incidents (log4shell, xz backdoor), check all projects/repos the user maintains, not just the current one
 - Keep the incident report in the repository (e.g., `SECURITY-INCIDENT-<date>.md`) for future reference
 - After remediation, run the `/scan` skill to verify the fix and check for any new issues introduced
-- Combine with the `/review` skill to evaluate the affected package's overall security posture
+- Combine with the `/inspect` skill to evaluate the affected package's overall security posture
 - For supply-chain compromises, also check if the user's CI/CD pipelines use the affected package
