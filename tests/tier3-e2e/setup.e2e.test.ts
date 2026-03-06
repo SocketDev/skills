@@ -28,7 +28,7 @@ describe("Setup E2E", () => {
   it("detects GitHub Actions and suggests config", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "setup",
+        "socket-setup",
         "Set up Socket for this project. Detect the CI/CD system and tell me what configuration is needed."
       ),
       workingDir: testDir,
@@ -45,7 +45,7 @@ describe("Setup E2E", () => {
   it("provides CLI installation guidance", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "setup",
+        "socket-setup",
         "How do I install and set up the Socket CLI for this project?"
       ),
       workingDir: testDir,

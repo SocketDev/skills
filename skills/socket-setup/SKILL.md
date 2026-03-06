@@ -1,5 +1,5 @@
 ---
-name: setup
+name: socket-setup
 description: Set up Socket — prompt for API key, install the CLI, authenticate,
   configure policies and tokens, set up CI/CD for firewall or patch modes across
   GitHub, GitLab, Bitbucket, and other systems.
@@ -39,7 +39,7 @@ description: Set up Socket — prompt for API key, install the CLI, authenticate
 - Skip entirely for free tier
 
 ## Step 4: Ask What to Set Up
-- Ask the user: do you want to set up **Firewall**, **Patches**, **Policies**, or a combination?
+- Ask the user: do you want to set up **Firewall**, **Patches**, **Policies** (enterprise only), or a combination?
 - Route to the appropriate section(s) below
 
 ## Step 5: Detect SCM and CI System
@@ -68,6 +68,17 @@ Or manually detect:
 
 ## Firewall Setup
 
+### Installing sfw per Package Manager
+
+| Package Manager | Install sfw |
+|----------------|------------|
+| npm | `npm install -g sfw` |
+| pnpm | `pnpm add -g sfw` |
+| bun | `bun add -g sfw` |
+| Standalone | `curl -fsSL https://socket.dev/download/sfw/latest/{platform} -o /usr/local/bin/sfw && chmod +x /usr/local/bin/sfw` |
+
+Replace `{platform}` with `linux-x64`, `darwin-arm64`, etc. as appropriate.
+
 ### GitHub Actions
 - Use SocketDev/action@v1
 - Free tier: mode: firewall-free (no socket-token needed)
@@ -80,7 +91,7 @@ Or manually detect:
 
 ### GitLab CI
 - Add a `before_script` or dedicated stage to install `sfw`
-- Install via npm: `npm install -g @anthropic-ai/sfw`
+- Install via npm: `npm install -g sfw`
 - Or install standalone binary:
   ```bash
   curl -fsSL https://socket.dev/download/sfw/latest/linux-x64 -o /usr/local/bin/sfw && chmod +x /usr/local/bin/sfw
@@ -104,15 +115,17 @@ Or manually detect:
   # macOS arm64
   curl -fsSL https://socket.dev/download/sfw/latest/darwin-arm64 -o /usr/local/bin/sfw && chmod +x /usr/local/bin/sfw
   ```
-- Or install via npm: `npm install -g @anthropic-ai/sfw`
+- Or install via npm: `npm install -g sfw`
 - Prefix install commands with sfw
 - Set `SOCKET_CLI_API_TOKEN` as env var for enterprise
 
 ### Local Development
-- `npm install -g @anthropic-ai/sfw` (or standalone binary as above)
+- `npm install -g sfw` (or standalone binary as above)
 - Usage: `sfw npm install`, `sfw pip install`, etc.
 
 ## Socket Policy Configuration
+
+> **Enterprise only** — free tier users cannot configure policies. Skip this section if on the free tier.
 
 Configure Socket policies to control which issues are flagged during scans and CI checks.
 
@@ -215,7 +228,7 @@ For local development, authenticate using one of:
 
 ## Patch Infrastructure Setup
 
-Set up automated patching so `socket-patch apply` runs after every dependency install. For one-time manual patching, use the `/dep-patch` skill instead.
+Set up automated patching so `socket-patch apply` runs after every dependency install. For one-time manual patching, use the `/socket-dep-patch` skill instead.
 
 ### Scan Codebase for Install/Build Locations
 
@@ -241,6 +254,23 @@ For each location, record the file path, the install command, and where to inser
 
 Present findings to the user before making changes.
 
+### Package Manager Reference
+
+Use the appropriate command to run `socket-patch` based on the project's package manager:
+
+| Package Manager | Run socket-patch |
+|----------------|-----------------|
+| npm | `npx @socketsecurity/socket-patch apply` |
+| pnpm | `pnpx @socketsecurity/socket-patch apply` |
+| yarn | `npx @socketsecurity/socket-patch apply` |
+| bun | `bunx @socketsecurity/socket-patch apply` |
+| deno | `deno run npm:@socketsecurity/socket-patch apply` |
+| Python | `pipx run socket-patch apply` (if pipx available), else `pip install socket-patch && socket-patch apply` |
+| Standalone | `curl -fsSL https://raw.githubusercontent.com/SocketDev/socket-patch/main/install.sh \| sh` then `socket-patch apply` |
+| GitHub Actions | `SocketDev/action@v1` with `mode: patch` (preferred) |
+
+Use the appropriate runner (`npx`, `pnpx`, `bunx`, etc.) based on the detected package manager in the sections below.
+
 ### GitHub Actions (Preferred for GitHub repos)
 
 Use `SocketDev/action@v1` with `mode: patch`:
@@ -257,22 +287,22 @@ Place after `actions/checkout`, before install steps. No `socket-token` is neede
 
 ### GitLab CI
 
-Add a step to install `socket-patch` and apply patches after dependency install:
+Add a step to install `socket-patch` and apply patches after dependency install. Use the appropriate package manager runner (see reference table above):
 
 ```yaml
 before_script:
-  - curl -fsSL https://raw.githubusercontent.com/nicolo-ribaudo/socket-patch-cli/main/install.sh | sh
+  - curl -fsSL https://raw.githubusercontent.com/SocketDev/socket-patch/main/install.sh | sh
   - npm install
   - socket-patch apply
 ```
 
 ### Bitbucket Pipelines
 
-Add a step to install `socket-patch` and apply patches:
+Add a step to install `socket-patch` and apply patches. Use the appropriate package manager runner (see reference table above):
 
 ```yaml
 script:
-  - curl -fsSL https://raw.githubusercontent.com/nicolo-ribaudo/socket-patch-cli/main/install.sh | sh
+  - curl -fsSL https://raw.githubusercontent.com/SocketDev/socket-patch/main/install.sh | sh
   - npm install
   - socket-patch apply
 ```
@@ -281,7 +311,7 @@ script:
 
 Generic pattern for any CI system:
 
-1. Install `socket-patch` via curl or npm
+1. Install `socket-patch` via curl, npm, or the appropriate package manager runner (see reference table above)
 2. Run your normal dependency install step
 3. Run `socket-patch apply` after install, before build
 
@@ -297,7 +327,7 @@ This auto-adds `"postinstall": "socket-patch apply"` to your `package.json` scri
 
 ### Dockerfile Patterns
 
-Add a `RUN socket-patch apply` layer after the install layer:
+Add a `RUN socket-patch apply` layer after the install layer. Use the appropriate runner for the project's package manager (e.g., `pnpx` for pnpm, `bunx` for bun):
 
 ```dockerfile
 FROM node:20-alpine
@@ -311,7 +341,7 @@ RUN npm run build
 
 ### Makefile Patterns
 
-Add a patch target that runs after install:
+Add a patch target that runs after install. Adapt commands to match the project's package manager:
 
 ```makefile
 install:
@@ -324,7 +354,7 @@ build: install
 
 ### Generic Fallback
 
-If the project uses an unusual build system:
+If the project uses an unusual build system, use the appropriate package manager runner (see reference table above):
 
 - **Interpreted projects** (Python, Ruby): add `socket-patch apply` after `pip install` / `bundle install`
 - **Compiled projects** (Rust, Go, Java): add after dependency fetch, before compile
@@ -343,6 +373,6 @@ If the project uses an unusual build system:
 - `socket-patch apply` does not require an API key.
 - Use `SocketDev/action@v1` (correct casing) in GitHub workflow files.
 - For monorepos, use `patch-cwd` to target specific directories.
-- After setup, use the `/scan` skill for a first audit and the `/inspect` skill for package inspection.
+- After setup, use the `/socket-scan` skill for a first audit and the `/socket-inspect` skill for package inspection.
 - For GitHub repos, consider also installing the Socket Security GitHub App
   for automatic PR scanning.

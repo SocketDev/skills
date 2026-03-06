@@ -1,5 +1,5 @@
 ---
-name: inspect
+name: socket-inspect
 description: Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches.
 ---
 
@@ -156,7 +156,7 @@ To research alternatives:
 
 - Check the API response data for available Socket patches or overrides
 - If patches are available, mention the patched version and link to the socket.dev page
-- Cross-reference the `/dep-patch` and `/dep-upgrade` skills — remind the user they can apply patches with `/dep-patch` (binary-level, no version change) or run a security-audited upgrade with `/dep-upgrade` (version upgrade with code migration)
+- Cross-reference the `/socket-dep-patch` and `/socket-dep-upgrade` skills — remind the user they can apply patches with `/socket-dep-patch` (binary-level, no version change) or run a security-audited upgrade with `/socket-dep-upgrade` (version upgrade with code migration)
 
 ## Output Format
 
@@ -194,7 +194,7 @@ List all Socket alerts grouped by category (security, quality, maintenance, lice
 Summarize findings across the five dimensions (malware, vulnerabilities, dependency tree, maintenance health, author trust). Call out anything that warrants concern.
 
 **Socket Patches**
-State whether Socket patches are available. If yes, mention the patched version and how to apply via `/dep-patch`.
+State whether Socket patches are available. If yes, mention the patched version and how to apply via `/socket-dep-patch`.
 
 **Alternatives** (if applicable)
 Include the comparison table from Step 4.
@@ -217,7 +217,7 @@ A clear, actionable recommendation: safe to use, use with caution (with reasons)
 - Single-maintainer packages carry higher supply-chain risk
 - Large transitive dependency trees increase attack surface
 - If a package is flagged as malware, do NOT install it — recommend immediate removal if already present
-- Use inspect results to inform decisions with the `/dep-upgrade`, `/dep-patch`, and `/scan` skills
+- Use inspect results to inform decisions with the `/socket-dep-upgrade`, `/socket-dep-patch`, and `/socket-scan` skills
 - Weigh Socket score and maintenance health over download count alone
 - Re-review periodically — a package's security posture changes over time
 - Prefer Socket patches over manual version pinning when available

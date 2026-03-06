@@ -79,10 +79,10 @@ const CATEGORIES: [string, CategoryDef][] = [
 ];
 
 function getCategory(skillName: string): string {
-  if (skillName === "setup") return "setup";
-  if (skillName === "scan" || skillName === "inspect") return "analysis";
-  if (skillName.startsWith("dep-")) return "dep";
-  if (skillName === "fix") return "fix";
+  if (skillName === "socket-setup") return "setup";
+  if (skillName === "socket-scan" || skillName === "socket-inspect") return "analysis";
+  if (skillName.startsWith("socket-dep-")) return "dep";
+  if (skillName === "socket-fix") return "fix";
   return "setup";
 }
 

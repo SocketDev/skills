@@ -28,7 +28,7 @@ describe("Dep Patch E2E", () => {
   it("suggests patching for lodash", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "dep-patch",
+        "socket-dep-patch",
         "How do I patch the lodash vulnerabilities in this project? Use the Socket CLI tools to find the right approach."
       ),
       workingDir: testDir,
@@ -45,7 +45,7 @@ describe("Dep Patch E2E", () => {
   it("mentions verification steps", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "dep-patch",
+        "socket-dep-patch",
         "What steps should I take to fix security vulnerabilities in this project's dependencies? Read the package.json, identify the vulnerable packages, and describe the verification steps (testing, scanning, etc.) I should follow after applying patches."
       ),
       workingDir: testDir,

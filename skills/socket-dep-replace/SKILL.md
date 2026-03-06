@@ -1,5 +1,5 @@
 ---
-name: dep-replace
+name: socket-dep-replace
 description: Replace a dependency with an alternative package, eliminate it via code
   rewrite, or use socket-optimize for optimized replacements.
 ---
@@ -18,7 +18,7 @@ Replace a dependency with an alternative package, eliminate it via code rewrite,
 
 ## Prerequisites
 
-- **Socket CLI** — optional but recommended. Required for Strategy A (`socket-optimize`). Install via `/setup` if not available.
+- **Socket CLI** — optional but recommended. Required for Strategy A (`socket-optimize`). Install via `/socket-setup` if not available.
 - **Build and test commands** — the project should have a working build and test setup for verification.
 
 ## Step 1: Identify the Target Package
@@ -26,7 +26,7 @@ Replace a dependency with an alternative package, eliminate it via code rewrite,
 If the user specifies a package name, use that. If they also specify a replacement, note it for Step 5.
 
 If the user isn't sure which package to replace, help them pick one:
-- Suggest running `/scan` first to identify flagged or low-score dependencies
+- Suggest running `/socket-scan` first to identify flagged or low-score dependencies
 - Check for packages with known maintenance issues or security alerts
 - Look for trivial utility packages that could be inlined
 
@@ -134,7 +134,7 @@ Usage map:
 Unique APIs used: {list} ({count} total)
 ```
 
-If the package has zero usages, suggest using `/dep-cleanup` instead (it's unused, not needing replacement).
+If the package has zero usages, suggest using `/socket-dep-cleanup` instead (it's unused, not needing replacement).
 
 ## Step 5: Determine Replacement Strategy
 
@@ -148,12 +148,12 @@ If the Socket CLI is installed:
 2. Present the suggestions to the user with package names, descriptions, and Socket scores
 3. If the user picks one, proceed to Step 6 with that replacement
 
-If the Socket CLI is not installed, mention that `socket-optimize` is available via `/setup` and move to Strategy B.
+If the Socket CLI is not installed, mention that `socket-optimize` is available via `/socket-setup` and move to Strategy B.
 
-### Strategy B: Research Alternatives via `/inspect`
+### Strategy B: Research Alternatives via `/socket-inspect`
 
 1. Research candidate replacement packages — use knowledge of the ecosystem to identify 2-4 alternatives
-2. For each candidate, gather via `/inspect`:
+2. For each candidate, gather via `/socket-inspect`:
    - Socket score and alerts
    - Number of dependencies
    - Package size
@@ -268,9 +268,9 @@ Follow the standard build & test verification workflow (see `skills/_shared/veri
 - **Partial API coverage**: If no single replacement covers all used APIs, report the gap and let the user decide — they may want to use multiple packages or inline the uncovered APIs.
 - **`socket-optimize` not available**: Fall back to Strategy B (manual research).
 
-## How This Differs from /dep-cleanup
+## How This Differs from /socket-dep-cleanup
 
-| Aspect | /dep-cleanup | /dep-replace |
+| Aspect | /socket-dep-cleanup | /socket-dep-replace |
 |--------|-------------|-------------|
 | **Goal** | Remove an unused dependency | Swap a used dependency for an alternative |
 | **Precondition** | Package is (suspected) unused | Package IS used but needs replacement |
@@ -281,7 +281,7 @@ Follow the standard build & test verification workflow (see `skills/_shared/veri
 ## Tips
 
 - For large migrations (many call sites or complex API differences), use subagents to parallelize the rewrite across files
-- Run `/scan` after replacement to verify the new dependency's security posture
+- Run `/socket-scan` after replacement to verify the new dependency's security posture
 - When replacing a package used across many files, consider creating a thin adapter module first, then swapping the implementation behind it
 - For Strategy C (inline), keep the utility file small and well-tested — don't inline complex logic
 - If the user isn't sure which replacement to pick, Strategy B's API compatibility table helps make an informed decision

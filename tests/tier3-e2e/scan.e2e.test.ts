@@ -31,7 +31,7 @@ describe("Scan E2E", () => {
   it("scans project and reports findings", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
+        "socket-scan",
         "Scan this project's dependencies for security risks. Use the Socket CLI to create a scan and report the findings."
       ),
       workingDir: testDir,
@@ -48,7 +48,7 @@ describe("Scan E2E", () => {
   it("identifies specific vulnerable package", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
+        "socket-scan",
         "Use the Socket CLI to check if any dependencies have known CVEs or vulnerabilities."
       ),
       workingDir: testDir,
@@ -66,7 +66,7 @@ describe("Scan E2E", () => {
   it("generates a compliance report", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
+        "socket-scan",
         "Audit the licenses of all dependencies in this project. Read the package.json and classify each dependency's license. Produce a compliance summary showing license types and any issues."
       ),
       workingDir: testDir,
@@ -83,7 +83,7 @@ describe("Scan E2E", () => {
   it("identifies SBOM output format", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "scan",
+        "socket-scan",
         "What SBOM formats can you generate for this project? List the dependencies and describe how you would produce a CycloneDX or SPDX SBOM."
       ),
       workingDir: testDir,
