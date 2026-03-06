@@ -6,7 +6,7 @@ import {
   expectScoreAboveThreshold,
 } from "../helpers/assertions.js";
 
-describe("Upgrade E2E", () => {
+describe("Dep Upgrade E2E", () => {
   let adapter: AgentAdapter;
   let testDir: string;
 
@@ -31,7 +31,7 @@ describe("Upgrade E2E", () => {
   it("discovers vulns and suggests updates", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "upgrade",
+        "dep-upgrade",
         "Read this project's package.json and identify which dependencies have known vulnerabilities. lodash 4.17.20 is known to have CVEs — what version should it be updated to? Suggest safe upgrade versions for any vulnerable packages. Do not run socket fix. You can use npm audit if available, but primarily rely on reading the package.json and your knowledge of CVEs."
       ),
       workingDir: testDir,
@@ -48,7 +48,7 @@ describe("Upgrade E2E", () => {
   it("identifies lodash upgrade path", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "upgrade",
+        "dep-upgrade",
         "What version should lodash be updated to for security? Try `npx socket npm/lodash` to check, but if the command fails, use your knowledge of lodash CVEs to recommend a safe version."
       ),
       workingDir: testDir,

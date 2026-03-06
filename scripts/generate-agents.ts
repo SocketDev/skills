@@ -66,6 +66,26 @@ function loadMarketplace(): Marketplace {
   return JSON.parse(fs.readFileSync(MARKETPLACE_PATH, "utf-8"));
 }
 
+interface CategoryDef {
+  label: string;
+  description: string;
+}
+
+const CATEGORIES: [string, CategoryDef][] = [
+  ["setup", { label: "Setup", description: "Install, authenticate, and configure Socket for your project." }],
+  ["research", { label: "Research", description: "Scan dependencies and inspect individual packages for security risks." }],
+  ["dep", { label: "Dependency Management", description: "Upgrade, patch, and clean up individual dependencies." }],
+  ["repair", { label: "Repair", description: "Holistic dependency repair — orchestrate cleanup, patching, and upgrades in a single phased workflow." }],
+];
+
+function getCategory(skillName: string): string {
+  if (skillName === "setup") return "setup";
+  if (skillName.startsWith("research-")) return "research";
+  if (skillName.startsWith("dep-")) return "dep";
+  if (skillName === "repair") return "repair";
+  return "setup";
+}
+
 function generateReadmeTable(skills: Skill[]): string {
   const marketplace = loadMarketplace();
   const pluginsBySource = new Map<string, MarketplacePlugin>();
@@ -73,18 +93,43 @@ function generateReadmeTable(skills: Skill[]): string {
     pluginsBySource.set(p.source, p);
   }
 
-  const lines = [
-    "| Name | Description | Documentation |",
-    "|------|-------------|---------------|",
-  ];
-
+  const grouped = new Map<string, Skill[]>();
+  for (const [key] of CATEGORIES) {
+    grouped.set(key, []);
+  }
   for (const skill of skills) {
-    const source = `./${skill.path}`;
-    const plugin = pluginsBySource.get(source);
-    const name = plugin?.name ?? skill.name;
-    const description = plugin?.description ?? skill.description;
-    const docLink = `[SKILL.md](${skill.path}/SKILL.md)`;
-    lines.push(`| \`${name}\` | ${description} | ${docLink} |`);
+    const cat = getCategory(skill.name);
+    grouped.get(cat)?.push(skill);
+  }
+
+  const lines: string[] = [];
+
+  for (const [key, def] of CATEGORIES) {
+    const catSkills = grouped.get(key);
+    if (!catSkills || catSkills.length === 0) continue;
+
+    lines.push(`#### ${def.label}`);
+    lines.push("");
+    lines.push(def.description);
+    lines.push("");
+    lines.push("| Name | Description | Documentation |");
+    lines.push("|------|-------------|---------------|");
+
+    for (const skill of catSkills) {
+      const source = `./${skill.path}`;
+      const plugin = pluginsBySource.get(source);
+      const name = plugin?.name ?? skill.name;
+      const description = plugin?.description ?? skill.description;
+      const docLink = `[SKILL.md](${skill.path}/SKILL.md)`;
+      lines.push(`| \`${name}\` | ${description} | ${docLink} |`);
+    }
+
+    lines.push("");
+  }
+
+  // Remove trailing empty line
+  while (lines.length > 0 && lines[lines.length - 1] === "") {
+    lines.pop();
   }
 
   return lines.join("\n");

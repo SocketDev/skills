@@ -6,7 +6,7 @@ import {
   expectScoreAboveThreshold,
 } from "../helpers/assertions.js";
 
-describe("Audit E2E", () => {
+describe("Research Scan E2E", () => {
   let adapter: AgentAdapter;
   let testDir: string;
 
@@ -28,10 +28,45 @@ describe("Audit E2E", () => {
     if (testDir) cleanupTestRepo(testDir);
   });
 
+  it("scans project and reports findings", { timeout: 300_000 }, async () => {
+    const response = await adapter.runPrompt({
+      prompt: buildSkillPrompt(
+        "research-scan",
+        "Scan this project's dependencies for security risks. Use the Socket CLI to create a scan and report the findings."
+      ),
+      workingDir: testDir,
+      timeoutMs: 240_000,
+    });
+
+    expectScoreAboveThreshold(
+      response,
+      ["lodash", "vulnerab", "security", "scan", "risk"],
+      0.4
+    );
+  });
+
+  it("identifies specific vulnerable package", { timeout: 300_000 }, async () => {
+    const response = await adapter.runPrompt({
+      prompt: buildSkillPrompt(
+        "research-scan",
+        "Use the Socket CLI to check if any dependencies have known CVEs or vulnerabilities."
+      ),
+      workingDir: testDir,
+      timeoutMs: 240_000,
+    });
+
+    expectOutputContains(response, ["lodash"]);
+    expectScoreAboveThreshold(
+      response,
+      ["lodash", "CVE", "vulnerab", "version"],
+      0.4
+    );
+  });
+
   it("generates a compliance report", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "audit",
+        "research-scan",
         "Audit the licenses of all dependencies in this project. Read the package.json and classify each dependency's license. Produce a compliance summary showing license types and any issues."
       ),
       workingDir: testDir,
@@ -48,7 +83,7 @@ describe("Audit E2E", () => {
   it("identifies SBOM output format", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "audit",
+        "research-scan",
         "What SBOM formats can you generate for this project? List the dependencies and describe how you would produce a CycloneDX or SPDX SBOM."
       ),
       workingDir: testDir,

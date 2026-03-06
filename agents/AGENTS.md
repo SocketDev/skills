@@ -6,13 +6,13 @@ You have additional SKILLs documented in directories containing a "SKILL.md" fil
 
 | Skill | Description |
 |-------|-------------|
-| audit | Generate compliance reports, SBOMs, and license audits for your project. Produces CycloneDX/SPDX output, aggregates license usage, flags problematic licenses, and creates a compliance summary using Socket data. |
-| cleanup | Find and remove unused dependencies from your project. Scans the codebase for import and usage patterns across npm, PyPI, Cargo, Bundler, Maven, NuGet, Go, pnpm, and Yarn to identify dependencies that are no longer referenced. |
-| inspect | Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches. |
-| patch | Apply Socket's binary-level security patches without changing dependency versions, and set up automated patching infrastructure. Uses socket-patch apply to fix vulnerabilities in-place across CI/CD and local development. |
-| scan | Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, and performs Tier 1 reachability analysis for enterprise customers. |
-| setup | Set up Socket — prompt for API key, install the CLI, authenticate, configure CI/CD for firewall or patch modes across GitHub, GitLab, Bitbucket, and other systems. |
-| upgrade | Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration. |
+| dep-cleanup | Evaluate and remove a single unused dependency from your project. Searches the entire codebase for all usages (imports, requires, config refs, scripts, type packages, indirect usage), reports findings, and performs full removal with verification. |
+| dep-patch | Apply Socket's binary-level security patches without changing dependency versions. Uses socket-patch apply to fix vulnerabilities in-place. For CI/CD and infrastructure setup, use the /setup skill. |
+| dep-upgrade | Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration. |
+| repair | Holistic dependency repair — orchestrates cleanup, patching, and upgrades in a single workflow with three aggressiveness levels (conservative, cautious, full). Delegates to /dep-cleanup, /dep-patch, and /dep-upgrade as subroutines. |
+| research-inspect | Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches. |
+| research-scan | Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, performs Tier 1 reachability analysis for enterprise customers, and provides license compliance auditing with SBOM generation. |
+| setup | Set up Socket — prompt for API key, install the CLI, authenticate, configure policies and tokens, set up CI/CD for firewall or patch modes across GitHub, GitLab, Bitbucket, and other systems. |
 
 ## Usage
 
@@ -25,10 +25,10 @@ Paths referenced within SKILL folders are relative to that SKILL. For example th
 ## Skill Files
 
 The skills are located in:
-- `skills/audit/SKILL.md`
-- `skills/cleanup/SKILL.md`
-- `skills/inspect/SKILL.md`
-- `skills/patch/SKILL.md`
-- `skills/scan/SKILL.md`
+- `skills/dep-cleanup/SKILL.md`
+- `skills/dep-patch/SKILL.md`
+- `skills/dep-upgrade/SKILL.md`
+- `skills/repair/SKILL.md`
+- `skills/research-inspect/SKILL.md`
+- `skills/research-scan/SKILL.md`
 - `skills/setup/SKILL.md`
-- `skills/upgrade/SKILL.md`
