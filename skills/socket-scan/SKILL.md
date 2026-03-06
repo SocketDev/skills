@@ -26,11 +26,21 @@ Run a full dependency scan using the Socket CLI. Automatically discovers all pro
 
 ## Prerequisites
 
+**A Socket account and API token are required.** All scans (`socket scan create`) require authentication — there is no unauthenticated scan mode. Users without a Socket account should use `/socket-dep-patch` (binary patches) or `sfw` (firewall) instead, and create an account at https://socket.dev when they need scanning capabilities.
+
 The Socket CLI must be installed and authenticated. Verify readiness:
 
 ```
 socket --version
 ```
+
+Verify authentication before attempting any scan:
+
+```
+socket organization list
+```
+
+If this fails, the user needs to authenticate with `socket login` or set the `SOCKET_CLI_API_TOKEN` environment variable. Use the `/socket-setup` skill for guidance.
 
 If `socket` is not installed globally, use `npx` to run it without installing:
 
@@ -38,13 +48,9 @@ If `socket` is not installed globally, use `npx` to run it without installing:
 npx socket scan create --repo . --json
 ```
 
-All `socket` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `socket-setup` skill.
+All `socket` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `/socket-setup` skill.
 
-For enterprise features (reachability analysis), authentication is required via `socket login` or the `SOCKET_CLI_API_TOKEN` environment variable. Verify with:
-
-```
-socket organization list
-```
+For enterprise features (reachability analysis), an enterprise subscription is required in addition to authentication.
 
 ## Scan Workflow
 
@@ -123,7 +129,7 @@ This analyzes the project's dependency graph and source code to classify each vu
 
 Reachability analysis generates a `.socket.facts.json` file in the project root with detailed findings. This helps prioritize which vulnerabilities to fix first — focus effort on `reachable` issues rather than wasting time on `unreachable` ones.
 
-**Skip this step entirely for free-tier users** — reachability analysis requires an enterprise subscription with an authenticated organization.
+**Skip this step entirely for non-enterprise users** — reachability analysis requires an enterprise subscription with an authenticated organization.
 
 ### 4. Act on Findings
 
@@ -253,7 +259,7 @@ Produce a human-readable compliance summary:
 ## Error Handling
 
 - **`socket: command not found`**: Install the Socket CLI with `npm install -g socket` or use `npx socket` as a prefix. If you need a permanent installation, use the `/socket-setup` skill.
-- **`socket scan create` fails with authentication error**: Enterprise scans require authentication. Run `socket login` or set the `SOCKET_CLI_API_TOKEN` environment variable. Free-tier users can still run basic scans without authentication.
+- **`socket scan create` fails with authentication error**: All scans require authentication. Run `socket login` or set the `SOCKET_CLI_API_TOKEN` environment variable. If the user does not have a Socket account, they need to create one at https://socket.dev. For users without an account, suggest `/socket-dep-patch` or `sfw` as alternatives.
 - **`socket scan reach` returns "not available"**: Reachability analysis requires an enterprise subscription. Skip this step for free-tier users.
 - **No manifest/lock files found**: The scan relies on manifest files (`package.json`, `requirements.txt`, `go.mod`, etc.). Ensure the `--repo` path points to a directory containing these files.
 - **Scan times out**: Large monorepos with many manifest files may take longer. Try limiting the scan to a specific subdirectory with `--repo ./path/to/subdir`.
@@ -275,3 +281,4 @@ Produce a human-readable compliance summary:
 - Re-audit after adding or updating dependencies — license information can change between versions
 - When flagging GPL dependencies, check if they are dev-only — GPL in devDependencies is generally lower risk for commercial projects
 - Use the `/socket-inspect` skill to deep-dive into specific packages flagged during the audit
+- **All scans require a Socket account and API token.** For users without an account, suggest `/socket-dep-patch` (binary patches) or `sfw` (firewall) as alternatives that work without authentication

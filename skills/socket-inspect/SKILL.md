@@ -17,6 +17,13 @@ Research a package before you depend on it. This skill pulls every available sig
 - Check if Socket has patches available for a vulnerable package
 - Get a comprehensive supply-chain risk report
 
+## Prerequisites
+
+- **A Socket account and API key are required.** Both the Batch PURL API (`SOCKET_SECURITY_API_KEY`) and the Socket CLI (`SOCKET_CLI_API_TOKEN` or `socket login`) require authentication. There is no unauthenticated mode for package inspection.
+- Users without an account should create one at https://socket.dev.
+- Use the `/socket-setup` skill for installation and authentication guidance.
+- Verify auth: `socket organization list`
+
 ## Step 1 — Fetch Package Data via the Socket Batch PURL API
 
 Query the Socket Batch PURL REST API with the package's PURL (Package URL) to retrieve scores, alerts, CVEs, and metadata.
@@ -41,7 +48,7 @@ curl -X POST https://api.socket.dev/v0/purl \
   -d '{"purls": ["pkg:npm/lodash@4.17.21"]}'
 ```
 
-If `SOCKET_SECURITY_API_KEY` is not set, try `npx socket npm/<name>` as a fallback.
+If `SOCKET_SECURITY_API_KEY` is not set, authentication is required before proceeding. Run `socket login` or set the `SOCKET_SECURITY_API_KEY` environment variable. Use the `/socket-setup` skill for guidance.
 
 Extract **all** returned data:
 - Overall score and category scores (security, quality, maintenance, license)
@@ -71,7 +78,9 @@ Use `WebFetch` to visit the page and extract:
 - Dependency graph summary
 - Any additional context not present in the API response
 
-If `WebFetch` is unavailable or fails, note that the report is based on API data only and include the URL so the user can check manually.
+**Note:** The socket.dev package page may be blocked by Cloudflare bot protection when accessed via `WebFetch`. The page URL should still be provided to the user as a manual link, but cannot be relied on as a programmatic data source.
+
+If `WebFetch` is unavailable or fails (including due to bot protection), note that the report is based on API data only and include the URL so the user can check manually.
 
 ## Step 3 — Evaluate Supply Chain Risk
 
@@ -206,7 +215,7 @@ A clear, actionable recommendation: safe to use, use with caution (with reasons)
 
 ## Error Handling
 
-- **Batch PURL API returns no data**: The package may not exist in the specified ecosystem, or the package name may be misspelled. Verify the exact package name and ecosystem. For scoped npm packages, include the full scope (e.g., `@babel/core`). If `SOCKET_SECURITY_API_KEY` is not set, fall back to `npx socket npm/<name>` or the socket.dev package page.
+- **Batch PURL API returns no data**: The package may not exist in the specified ecosystem, or the package name may be misspelled. Verify the exact package name and ecosystem. For scoped npm packages, include the full scope (e.g., `@babel/core`). If `SOCKET_SECURITY_API_KEY` is not set, authentication is required. All data paths (Batch PURL API, Socket CLI) require a Socket account. Use the `/socket-setup` skill to help the user create an account and authenticate.
 - **WebFetch fails on socket.dev page**: Fall back to API data only. Note in the report that the review is based on API data and include the socket.dev URL for the user to check manually.
 - **Package not found in Socket's database**: Socket may not index all packages in all ecosystems. Note this limitation and suggest checking the package's own repository and issue tracker directly.
 - **GitHub API rate limit**: If GitHub API calls for maintenance data are rate-limited, skip the maintenance health dimension and note it in the report.
@@ -220,4 +229,5 @@ A clear, actionable recommendation: safe to use, use with caution (with reasons)
 - Use inspect results to inform decisions with the `/socket-dep-upgrade`, `/socket-dep-patch`, and `/socket-scan` skills
 - Weigh Socket score and maintenance health over download count alone
 - Re-review periodically — a package's security posture changes over time
+- All inspection data paths require authentication — there are no unauthenticated fallbacks. Ensure the user has a Socket account before proceeding.
 - Prefer Socket patches over manual version pinning when available

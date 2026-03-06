@@ -17,11 +17,21 @@ Use the `socket fix` command to discover vulnerable dependencies, compute safe u
 
 ## Prerequisites
 
+**A Socket account and API token are required.** All `socket fix` commands require authentication — there is no unauthenticated mode. Users without a Socket account should use `/socket-dep-patch` (binary patches that work without authentication) instead, and create an account at https://socket.dev when they need upgrade capabilities.
+
 The Socket CLI must be installed and authenticated. Verify readiness:
 
 ```
 socket --version
 ```
+
+Verify authentication before attempting any fix:
+
+```
+socket organization list
+```
+
+If this fails, the user needs to authenticate with `socket login` or set the `SOCKET_CLI_API_TOKEN` environment variable. Use the `/socket-setup` skill for guidance.
 
 If `socket` is not installed globally, use `npx` to run it without installing:
 
@@ -29,7 +39,7 @@ If `socket` is not installed globally, use `npx` to run it without installing:
 npx socket fix --all --no-apply-fixes --json
 ```
 
-All `socket fix` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `socket-setup` skill.
+All `socket fix` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `/socket-setup` skill.
 
 ## Update Strategy
 
@@ -180,7 +190,7 @@ To manage context window limits without subagents:
 - **`socket fix` returns no results**: The project may have no fixable vulnerabilities, or the Socket API may not cover the project's ecosystems. Check that manifest and lock files exist in the repository.
 - **`socket fix --id` fails with "GHSA not found"**: The advisory ID may be incorrect or not yet indexed. Try searching by CVE ID or PURL instead.
 - **`socket fix` modifies files but tests fail**: The subagent (or main agent in fallback mode) should revert the changes with `git checkout -- .` and try an alternative version. Never leave the project in a broken state.
-- **Authentication required**: Some `socket fix` features require enterprise authentication. Run `socket login` or set `SOCKET_CLI_API_TOKEN`. Use the `/socket-setup` skill for guidance.
+- **Authentication required**: All `socket fix` commands require a Socket account and API token. Run `socket login` or set `SOCKET_CLI_API_TOKEN`. Use the `/socket-setup` skill for guidance. For users without an account, suggest `/socket-dep-patch` as an alternative.
 - **Network errors during fix**: `socket fix` contacts the Socket API to compute upgrade paths. Check network connectivity and try again.
 
 ## How This Differs from `/socket-dep-patch`
