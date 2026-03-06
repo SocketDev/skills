@@ -1,5 +1,5 @@
 ---
-name: research-scan
+name: scan
 description: Run a full dependency scan using the Socket CLI. Creates a scan in the
   Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks,
   performs Tier 1 reachability analysis for enterprise customers, and provides license
@@ -130,7 +130,7 @@ Reachability analysis generates a `.socket.facts.json` file in the project root 
 Based on scan results, cross-reference other skills to resolve issues:
 
 - **Vulnerabilities with available fixes** — use the `/dep-upgrade` skill to apply safe upgrades
-- **Packages needing deeper investigation** — use the `/research-inspect` skill to research specific packages
+- **Packages needing deeper investigation** — use the `/inspect` skill to research specific packages
 - **Packages with Socket patches available** — use the `/dep-patch` skill to apply security patches
 - **Unused dependencies** — use the `/dep-cleanup` skill to remove packages that are no longer needed
 
@@ -265,7 +265,7 @@ Produce a human-readable compliance summary:
 
 - Always run a scan after adding, updating, or removing dependencies to verify the project's security posture
 - Use `--json` for machine-readable output that is easier to parse and summarize
-- Combine with the `/research-inspect` skill for deep-dives into specific flagged packages
+- Combine with the `/inspect` skill for deep-dives into specific flagged packages
 - Combine with the `/dep-upgrade` skill to fix vulnerabilities discovered during the scan
 - Enterprise customers should use reachability analysis to prioritize fixes — focus on `reachable` vulnerabilities first
 - Scan results are available in the Socket dashboard for team visibility and historical tracking
@@ -274,4 +274,4 @@ Produce a human-readable compliance summary:
 - For enterprise compliance, generate SBOMs in both CycloneDX and SPDX formats
 - Re-audit after adding or updating dependencies — license information can change between versions
 - When flagging GPL dependencies, check if they are dev-only — GPL in devDependencies is generally lower risk for commercial projects
-- Use the `/research-inspect` skill to deep-dive into specific packages flagged during the audit
+- Use the `/inspect` skill to deep-dive into specific packages flagged during the audit

@@ -24,7 +24,7 @@ If the user specifies a package name, use that. Otherwise, ask which package the
 If the user isn't sure which package to evaluate, help them pick one:
 - Check `devDependencies` first — removing unused dev dependencies is lower risk
 - Look for packages with names that suggest narrow or outdated functionality
-- Suggest running `/research-scan` first to get an overview of the dependency landscape
+- Suggest running `/scan` first to get an overview of the dependency landscape
 
 **One package at a time.** If the user wants to evaluate multiple packages, run this workflow once per package sequentially.
 
@@ -187,4 +187,4 @@ Follow the standard build & test verification workflow (see `skills/_shared/veri
 - Some packages are used only in CI, deployment scripts, or editor configs — the search in Step 3 covers these
 - For PyPI, consult the package metadata on pypi.org if the import name is unclear
 - For monorepos, check usage across all workspaces before removing a root dependency
-- After cleanup, use the `/research-scan` skill to verify no issues remain in the dependency set
+- After cleanup, use the `/scan` skill to verify no issues remain in the dependency set

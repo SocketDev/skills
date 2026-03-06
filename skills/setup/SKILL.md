@@ -343,6 +343,6 @@ If the project uses an unusual build system:
 - `socket-patch apply` does not require an API key.
 - Use `SocketDev/action@v1` (correct casing) in GitHub workflow files.
 - For monorepos, use `patch-cwd` to target specific directories.
-- After setup, use the `/research-scan` skill for a first audit and the `/research-inspect` skill for package inspection.
+- After setup, use the `/scan` skill for a first audit and the `/inspect` skill for package inspection.
 - For GitHub repos, consider also installing the Socket Security GitHub App
   for automatic PR scanning.

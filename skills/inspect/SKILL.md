@@ -1,5 +1,5 @@
 ---
-name: research-inspect
+name: inspect
 description: Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches.
 ---
 
@@ -217,7 +217,7 @@ A clear, actionable recommendation: safe to use, use with caution (with reasons)
 - Single-maintainer packages carry higher supply-chain risk
 - Large transitive dependency trees increase attack surface
 - If a package is flagged as malware, do NOT install it — recommend immediate removal if already present
-- Use inspect results to inform decisions with the `/dep-upgrade`, `/dep-patch`, and `/research-scan` skills
+- Use inspect results to inform decisions with the `/dep-upgrade`, `/dep-patch`, and `/scan` skills
 - Weigh Socket score and maintenance health over download count alone
 - Re-review periodically — a package's security posture changes over time
 - Prefer Socket patches over manual version pinning when available

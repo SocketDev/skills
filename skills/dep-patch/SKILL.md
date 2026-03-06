@@ -106,5 +106,5 @@ To keep patches applied automatically in CI/CD or via postinstall hooks, use the
 - Use `SocketDev/action@v1` (correct casing) in GitHub workflow files
 - For monorepos, use `patch-cwd` to target specific directories
 - Commit `.socket/manifest.json` to track which patches are applied
-- After patching, use the `/research-scan` skill to verify no residual vulnerabilities remain
+- After patching, use the `/scan` skill to verify no residual vulnerabilities remain
 - Combine with the `/dep-upgrade` skill for vulnerabilities that don't have binary patches available

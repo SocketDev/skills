@@ -7,7 +7,7 @@ import {
   expectNoHallucinatedTools,
 } from "../helpers/assertions.js";
 
-describe("Research Inspect E2E", () => {
+describe("Inspect E2E", () => {
   let adapter: AgentAdapter;
 
   beforeAll(async () => {
@@ -23,7 +23,7 @@ describe("Research Inspect E2E", () => {
   it("reviews lodash and provides security info", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "research-inspect",
+        "inspect",
         "Review the npm package 'lodash'. Try using `npx socket npm/lodash` to look up its Socket score. If the CLI command fails, still provide a review based on what you know about lodash's security posture, known vulnerabilities (especially in versions before 4.17.21), and maintenance status."
       ),
       workingDir: process.cwd(),
@@ -40,7 +40,7 @@ describe("Research Inspect E2E", () => {
   it("reviews express and assesses health", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "research-inspect",
+        "inspect",
         "Review the npm package 'express'. Try using `npx socket npm/express` to look up its Socket score. If the CLI command fails, still provide a review based on what you know about express's security posture, quality, and dependency footprint."
       ),
       workingDir: process.cwd(),

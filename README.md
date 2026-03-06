@@ -5,6 +5,7 @@ Socket Security Skills are definitions for dependency security tasks like vulner
 - **Claude Code** (Anthropic) — native skill/plugin support
 - **Codex** (OpenAI) — Agent Skills standard + AGENTS.md fallback
 - **Gemini CLI** (Google DeepMind) — extensions support
+- **OpenCode** — skill directory support
 - **Cursor** — plugin manifest support
 - **VS Code Copilot / GitHub Copilot** — via AGENTS.md or Skills CLI
 - **Windsurf** — via Skills CLI
@@ -101,6 +102,15 @@ For contributors, regenerate manifests with:
 ./scripts/publish.sh
 ```
 
+### OpenCode
+
+This repository includes an `.opencode/skills` directory that OpenCode discovers automatically.
+
+1. Clone or install this repo into your project
+2. OpenCode will discover skills from `.opencode/skills/`
+
+Or manually copy skill folders into your project's `.opencode/skills/` directory.
+
 ### Other Agents (VS Code Copilot, Windsurf, Roo Code, etc.)
 
 For any agent that supports the Agent Skills standard or custom instructions:
@@ -131,14 +141,14 @@ Install, authenticate, and configure Socket for your project.
 |------|-------------|---------------|
 | `setup` | Set up Socket — prompt for API key, install the CLI, authenticate, configure policies and tokens, set up CI/CD for firewall or patch modes across GitHub, GitLab, Bitbucket, and other systems. | [SKILL.md](skills/setup/SKILL.md) |
 
-#### Research
+#### Analysis
 
 Scan dependencies and inspect individual packages for security risks.
 
 | Name | Description | Documentation |
 |------|-------------|---------------|
-| `research-inspect` | Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches. | [SKILL.md](skills/research-inspect/SKILL.md) |
-| `research-scan` | Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, performs Tier 1 reachability analysis for enterprise customers, and provides license compliance auditing with SBOM generation. | [SKILL.md](skills/research-scan/SKILL.md) |
+| `inspect` | Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches. | [SKILL.md](skills/inspect/SKILL.md) |
+| `scan` | Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, performs Tier 1 reachability analysis for enterprise customers, and provides license compliance auditing with SBOM generation. | [SKILL.md](skills/scan/SKILL.md) |
 
 #### Dependency Management
 
@@ -148,15 +158,16 @@ Upgrade, patch, and clean up individual dependencies.
 |------|-------------|---------------|
 | `dep-cleanup` | Evaluate and remove a single unused dependency from your project. Searches the entire codebase for all usages (imports, requires, config refs, scripts, type packages, indirect usage), reports findings, and performs full removal with verification. | [SKILL.md](skills/dep-cleanup/SKILL.md) |
 | `dep-patch` | Apply Socket's binary-level security patches without changing dependency versions. Uses socket-patch apply to fix vulnerabilities in-place. For CI/CD and infrastructure setup, use the /setup skill. | [SKILL.md](skills/dep-patch/SKILL.md) |
+| `dep-replace` | Replace a dependency with an alternative package, eliminate it via code rewrite, or use socket-optimize for optimized replacements. | [SKILL.md](skills/dep-replace/SKILL.md) |
 | `dep-upgrade` | Use socket fix to find and update vulnerable dependencies one at a time, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration. | [SKILL.md](skills/dep-upgrade/SKILL.md) |
 
-#### Repair
+#### Fix
 
 Holistic dependency repair — orchestrate cleanup, patching, and upgrades in a single phased workflow.
 
 | Name | Description | Documentation |
 |------|-------------|---------------|
-| `repair` | Holistic dependency repair — orchestrates cleanup, patching, and upgrades in a single workflow with three aggressiveness levels (conservative, cautious, full). | [SKILL.md](skills/repair/SKILL.md) |
+| `fix` | Holistic dependency repair — orchestrates cleanup, patching, and upgrades in a single workflow with three aggressiveness levels (conservative, cautious, full). | [SKILL.md](skills/fix/SKILL.md) |
 <!-- END_SKILLS_TABLE -->
 
 ## Contributing
