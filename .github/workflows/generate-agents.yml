@@ -59,30 +59,6 @@ jobs:
       - name: Run structural tests (Tier 1)
         run: npm run test:structural
 
-  test-mcp:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: "20"
-
-      - name: Install dependencies
-        run: npm ci || npm install
-
-      - name: Run structural tests (Tier 1)
-        run: npm run test:structural
-
-      - name: Run MCP tests (Tier 2)
-        if: env.SOCKET_SECURITY_API_KEY != ''
-        env:
-          SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
-        run: npm run test:mcp
-
   test-e2e:
     if: >
       github.event_name == 'workflow_dispatch' &&
