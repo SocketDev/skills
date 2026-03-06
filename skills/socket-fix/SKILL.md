@@ -1,14 +1,14 @@
 ---
-name: fix
+name: socket-fix
 description: Holistic dependency repair — orchestrates cleanup, replacement, patching,
   and upgrades in a single workflow with three aggressiveness levels (conservative,
-  cautious, full). Delegates to /dep-cleanup, /dep-replace, /dep-patch, and /dep-upgrade
+  cautious, full). Delegates to /socket-dep-cleanup, /socket-dep-replace, /socket-dep-patch, and /socket-dep-upgrade
   as subroutines.
 ---
 
 # Fix
 
-Holistic dependency repair — orchestrate `/dep-cleanup`, `/dep-replace`, `/dep-patch`, and `/dep-upgrade` into a single phased workflow. Choose from three aggressiveness levels (conservative, cautious, full) to control how far the repair goes.
+Holistic dependency repair — orchestrate `/socket-dep-cleanup`, `/socket-dep-replace`, `/socket-dep-patch`, and `/socket-dep-upgrade` into a single phased workflow. Choose from three aggressiveness levels (conservative, cautious, full) to control how far the repair goes.
 
 This skill is an **orchestrator**. It does not have its own tools — it delegates every concrete action to the dep-* skills.
 
@@ -71,12 +71,12 @@ For each dependency in the project:
    - CLI tools referenced in `package.json` scripts
    - Build plugins (webpack, babel, eslint, jest, etc.)
    - Packages with ambiguous import names (PyPI packages where import name differs from package name)
-4. For each clearly unused package, execute the `/dep-cleanup` skill workflow
+4. For each clearly unused package, execute the `/socket-dep-cleanup` skill workflow
 5. **Commit after each removal** so progress is preserved
 
 ### Phase 1b: Apply Binary Patches
 
-Execute the `/dep-patch` workflow:
+Execute the `/socket-dep-patch` workflow:
 
 1. Run `socket-patch apply --dry-run` to preview available patches
 2. Apply all patches with `socket-patch apply`
@@ -98,7 +98,7 @@ Execute Phase 1a (unused dep removal) and Phase 1b (binary patches) as described
 After Level 1 completes, identify the single highest-value change that carries some risk. Prioritize in this order:
 
 1. **Critical/high CVE upgrade** — a dependency with a known critical or high severity vulnerability that requires a version bump (use `socket fix --all --no-apply-fixes --json` to discover)
-2. **Replacement of a flagged dependency** — a dependency with a low Socket score or known maintenance issues that should be swapped for a better alternative (use `/dep-replace`)
+2. **Replacement of a flagged dependency** — a dependency with a low Socket score or known maintenance issues that should be swapped for a better alternative (use `/socket-dep-replace`)
 3. **Ambiguous unused dependency** — a package that is *probably* unused but was excluded from Phase 1a due to ambiguity (e.g., a `@types/*` package whose base package is not used, or a build plugin that may no longer be needed)
 4. **Safe minor version bump** — a dependency with a minor/patch update available that fixes a medium-severity issue
 
@@ -117,7 +117,7 @@ Proposed risky change (Level 2):
 
 ### Phase 2c: Execute If Approved
 
-- If the user approves, execute via `/dep-upgrade` (for version bumps) or `/dep-cleanup` (for removals)
+- If the user approves, execute via `/socket-dep-upgrade` (for version bumps) or `/socket-dep-cleanup` (for removals)
 - Build and test after applying
 - **Revert on failure** — if the change breaks the build or tests, revert immediately and report what happened
 - If the user declines, skip and report Level 2 complete
@@ -132,14 +132,14 @@ Aggressive repair. Apply everything possible, skip and continue on individual fa
 
 1. Run `socket fix --all --no-apply-fixes --json` to discover all fixable vulnerabilities
 2. Filter to **minor and patch bumps only** (`--no-major-updates`)
-3. For each vulnerability, dispatch `/dep-upgrade` to apply the fix
-4. **Skip and continue on failure** — if a single upgrade fails after retries, log the failure and move on to the next one (this diverges from `/dep-upgrade`'s default "bail on failure" behavior — intentional for Level 3's aggressive posture)
+3. For each vulnerability, dispatch `/socket-dep-upgrade` to apply the fix
+4. **Skip and continue on failure** — if a single upgrade fails after retries, log the failure and move on to the next one (this diverges from `/socket-dep-upgrade`'s default "bail on failure" behavior — intentional for Level 3's aggressive posture)
 5. Commit after each successful upgrade
 
 ### Phase 3b: Aggressive Cleanup
 
 1. Re-scan all dependencies for usage (the dependency list may have changed after Phase 3a upgrades)
-2. Run `/dep-cleanup` for **both** clearly unused AND ambiguous packages
+2. Run `/socket-dep-cleanup` for **both** clearly unused AND ambiguous packages
 3. After each removal, build and test
 4. **Revert removals that break the build** — if removing a package causes failures, re-add it and mark it as "still needed"
 5. Commit after each successful removal
@@ -147,7 +147,7 @@ Aggressive repair. Apply everything possible, skip and continue on individual fa
 ### Phase 3b2: Replace Flagged Dependencies
 
 1. Review scan results for dependencies with low Socket scores, unmaintained status, or known supply-chain risks
-2. For each flagged dependency, run `/dep-replace` to find and execute a replacement
+2. For each flagged dependency, run `/socket-dep-replace` to find and execute a replacement
 3. **Skip and continue on failure** — if a replacement cannot be completed (no suitable alternative, migration too complex, tests fail), log it and move on
 4. Commit after each successful replacement
 
@@ -160,7 +160,7 @@ Aggressive repair. Apply everything possible, skip and continue on individual fa
 ### Phase 3d: Risky Major Upgrades
 
 1. Re-run `socket fix --all --no-apply-fixes --json` to find remaining vulnerabilities
-2. Attempt **major version bumps** via `/dep-upgrade` with code migration
+2. Attempt **major version bumps** via `/socket-dep-upgrade` with code migration
 3. **Skip and continue on failure** — if a major upgrade cannot be completed (migration too complex, tests fail), log it and move on
 4. Commit after each successful upgrade
 
@@ -170,7 +170,7 @@ Aggressive repair. Apply everything possible, skip and continue on individual fa
 
 After all phases complete (regardless of level):
 
-1. Run `/scan` to get a fresh security scan
+1. Run `/socket-scan` to get a fresh security scan
 2. Compare findings against the pre-repair state
 3. Report a summary:
 
@@ -194,7 +194,7 @@ Repair Complete (Level 2 — Cautious)
 
 - **No dependencies found**: The project may not have manifest files in the expected locations. Check for monorepo structures or non-standard layouts.
 - **Build/test command unknown**: Ask the user for the correct build and test commands before starting repair.
-- **Socket CLI not available**: Binary patches and `socket fix` require the Socket CLI. Suggest running `/setup` first, or fall back to cleanup-only mode (Phase 1a only).
+- **Socket CLI not available**: Binary patches and `socket fix` require the Socket CLI. Suggest running `/socket-setup` first, or fall back to cleanup-only mode (Phase 1a only).
 - **All upgrades fail in Level 3**: If every upgrade attempt fails, report what was tried and suggest the user investigate manually. The cleanup and patch phases may still have succeeded.
 - **Network errors**: `socket fix` and `socket-patch` require network access. Check connectivity and retry once before skipping.
 
@@ -205,6 +205,6 @@ Repair Complete (Level 2 — Cautious)
 - Level 3 is best for major cleanup efforts where you're prepared to review and test extensively
 - Each level builds on the previous one, so you can start conservative and escalate
 - All changes are committed individually, making it easy to revert any single change
-- Run `/scan` before and after repair to measure improvement
+- Run `/socket-scan` before and after repair to measure improvement
 - For monorepos, consider running repair on each workspace individually
-- Combine with `/setup` to ensure the Socket CLI is properly configured before starting
+- Combine with `/socket-setup` to ensure the Socket CLI is properly configured before starting

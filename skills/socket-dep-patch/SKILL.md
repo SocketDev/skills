@@ -1,19 +1,19 @@
 ---
-name: dep-patch
+name: socket-dep-patch
 description: Apply Socket's binary-level security patches without changing dependency
   versions. Uses socket-patch apply to fix vulnerabilities in-place. For CI/CD and
-  infrastructure setup, use the /setup skill.
+  infrastructure setup, use the /socket-setup skill.
 ---
 
 # Dep Patch
 
 Apply Socket's binary-level security patches to vulnerable dependencies **without changing their version numbers**. This skill uses `socket-patch apply` to fix known vulnerabilities in-place. Patches are applied in bulk — `socket-patch apply` patches all available packages at once.
 
-For setting up automated patching infrastructure (postinstall hooks, CI integration, GitHub Actions), use the `/setup` skill.
+For setting up automated patching infrastructure (postinstall hooks, CI integration, GitHub Actions), use the `/socket-setup` skill.
 
-## How This Differs from `/dep-upgrade`
+## How This Differs from `/socket-dep-upgrade`
 
-| | `/dep-patch` (this skill) | `/dep-upgrade` |
+| | `/socket-dep-patch` (this skill) | `/socket-dep-upgrade` |
 |---|---|---|
 | **Primary tool** | `socket-patch apply` | `socket fix` |
 | **What it does** | Applies binary-level patches without changing versions | Upgrades dependency versions to fix CVEs |
@@ -22,7 +22,7 @@ For setting up automated patching infrastructure (postinstall hooks, CI integrat
 | **Scope** | All patchable packages at once | One dependency at a time |
 | **When to use** | You need fixes without version churn, or the upstream fix doesn't exist yet | You want to bring dependencies up to date |
 
-Use `/dep-patch` when you want to fix vulnerabilities without risking breaking changes from version upgrades. Use `/dep-upgrade` when you want full version upgrades with automated code migration.
+Use `/socket-dep-patch` when you want to fix vulnerabilities without risking breaking changes from version upgrades. Use `/socket-dep-upgrade` when you want full version upgrades with automated code migration.
 
 ## When to Use
 
@@ -45,7 +45,7 @@ Choose the installation method for your ecosystem:
 | npm (global) | `npm install -g @socketsecurity/socket-patch` |
 | pip | `pip install socket-patch` |
 | cargo | `cargo install socket-patch-cli` |
-| Standalone (macOS/Linux) | `curl -fsSL https://raw.githubusercontent.com/nicolo-ribaudo/socket-patch-cli/main/install.sh \| sh` |
+| Standalone (macOS/Linux) | `curl -fsSL https://raw.githubusercontent.com/SocketDev/socket-patch/main/install.sh \| sh` |
 
 Verify installation:
 
@@ -87,7 +87,7 @@ After patching, verify the project still works:
 
 ## Setting Up Automated Patching
 
-To keep patches applied automatically in CI/CD or via postinstall hooks, use the `/setup` skill. It covers:
+To keep patches applied automatically in CI/CD or via postinstall hooks, use the `/socket-setup` skill. It covers:
 - GitHub Actions (`SocketDev/action@v1` with `mode: patch`)
 - GitLab CI / Bitbucket Pipelines / generic CI `socket-patch apply` steps
 - Local dev postinstall hooks (`socket-patch setup`)
@@ -96,7 +96,7 @@ To keep patches applied automatically in CI/CD or via postinstall hooks, use the
 ## Error Handling
 
 - **`socket-patch` not found**: Install it using one of the methods in Step 1. For CI, ensure the install step runs before `socket-patch apply`.
-- **No patches available**: This means Socket doesn't have binary patches for the current vulnerabilities. Consider using the `/dep-upgrade` skill to upgrade versions instead.
+- **No patches available**: This means Socket doesn't have binary patches for the current vulnerabilities. Consider using the `/socket-dep-upgrade` skill to upgrade versions instead.
 - **Build fails after patching**: Run `socket-patch apply --dry-run` to identify which patch caused the issue. Report the failing patch so the user can decide whether to skip it.
 - **Permission errors**: Ensure write access to `node_modules/` or the equivalent dependency directory.
 
@@ -106,5 +106,5 @@ To keep patches applied automatically in CI/CD or via postinstall hooks, use the
 - Use `SocketDev/action@v1` (correct casing) in GitHub workflow files
 - For monorepos, use `patch-cwd` to target specific directories
 - Commit `.socket/manifest.json` to track which patches are applied
-- After patching, use the `/scan` skill to verify no residual vulnerabilities remain
-- Combine with the `/dep-upgrade` skill for vulnerabilities that don't have binary patches available
+- After patching, use the `/socket-scan` skill to verify no residual vulnerabilities remain
+- Combine with the `/socket-dep-upgrade` skill for vulnerabilities that don't have binary patches available

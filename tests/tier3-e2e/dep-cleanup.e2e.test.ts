@@ -28,7 +28,7 @@ describe("Dep Cleanup E2E", () => {
   it("evaluates a single unused dep", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "dep-cleanup",
+        "socket-dep-cleanup",
         "Check if 'is-odd' is used anywhere in this project. Do not remove it, just report whether it is used or unused."
       ),
       workingDir: testDir,
@@ -55,7 +55,7 @@ describe("Dep Cleanup E2E", () => {
   it("reports usage locations for a used dep", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "dep-cleanup",
+        "socket-dep-cleanup",
         "Check if 'lodash' is used anywhere in this project. Do not remove it, just report all usage locations."
       ),
       workingDir: testDir,

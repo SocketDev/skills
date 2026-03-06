@@ -28,7 +28,7 @@ describe("Dep Replace E2E", () => {
   it("identifies replacement strategies for a dependency", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "dep-replace",
+        "socket-dep-replace",
         "Analyze the 'is-odd' package in this project and suggest replacement strategies. Do not execute any migration, just present the strategies."
       ),
       workingDir: testDir,
@@ -45,7 +45,7 @@ describe("Dep Replace E2E", () => {
   it("builds a usage map for a target dependency", { timeout: 300_000 }, async () => {
     const response = await adapter.runPrompt({
       prompt: buildSkillPrompt(
-        "dep-replace",
+        "socket-dep-replace",
         "Build a usage map for the 'lodash' package in this project. List all files, line numbers, and specific APIs used. Do not execute any replacement."
       ),
       workingDir: testDir,

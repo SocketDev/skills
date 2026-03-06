@@ -1,5 +1,5 @@
 ---
-name: scan
+name: socket-scan
 description: Run a full dependency scan using the Socket CLI. Creates a scan in the
   Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks,
   performs Tier 1 reachability analysis for enterprise customers, and provides license
@@ -38,7 +38,7 @@ If `socket` is not installed globally, use `npx` to run it without installing:
 npx socket scan create --repo . --json
 ```
 
-All `socket` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `setup` skill.
+All `socket` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `socket-setup` skill.
 
 For enterprise features (reachability analysis), authentication is required via `socket login` or the `SOCKET_CLI_API_TOKEN` environment variable. Verify with:
 
@@ -129,10 +129,10 @@ Reachability analysis generates a `.socket.facts.json` file in the project root 
 
 Based on scan results, cross-reference other skills to resolve issues:
 
-- **Vulnerabilities with available fixes** — use the `/dep-upgrade` skill to apply safe upgrades
-- **Packages needing deeper investigation** — use the `/inspect` skill to research specific packages
-- **Packages with Socket patches available** — use the `/dep-patch` skill to apply security patches
-- **Unused dependencies** — use the `/dep-cleanup` skill to remove packages that are no longer needed
+- **Vulnerabilities with available fixes** — use the `/socket-dep-upgrade` skill to apply safe upgrades
+- **Packages needing deeper investigation** — use the `/socket-inspect` skill to research specific packages
+- **Packages with Socket patches available** — use the `/socket-dep-patch` skill to apply security patches
+- **Unused dependencies** — use the `/socket-dep-cleanup` skill to remove packages that are no longer needed
 
 ### 5. License & Compliance Audit
 
@@ -252,7 +252,7 @@ Produce a human-readable compliance summary:
 
 ## Error Handling
 
-- **`socket: command not found`**: Install the Socket CLI with `npm install -g socket` or use `npx socket` as a prefix. If you need a permanent installation, use the `/setup` skill.
+- **`socket: command not found`**: Install the Socket CLI with `npm install -g socket` or use `npx socket` as a prefix. If you need a permanent installation, use the `/socket-setup` skill.
 - **`socket scan create` fails with authentication error**: Enterprise scans require authentication. Run `socket login` or set the `SOCKET_CLI_API_TOKEN` environment variable. Free-tier users can still run basic scans without authentication.
 - **`socket scan reach` returns "not available"**: Reachability analysis requires an enterprise subscription. Skip this step for free-tier users.
 - **No manifest/lock files found**: The scan relies on manifest files (`package.json`, `requirements.txt`, `go.mod`, etc.). Ensure the `--repo` path points to a directory containing these files.
@@ -265,8 +265,8 @@ Produce a human-readable compliance summary:
 
 - Always run a scan after adding, updating, or removing dependencies to verify the project's security posture
 - Use `--json` for machine-readable output that is easier to parse and summarize
-- Combine with the `/inspect` skill for deep-dives into specific flagged packages
-- Combine with the `/dep-upgrade` skill to fix vulnerabilities discovered during the scan
+- Combine with the `/socket-inspect` skill for deep-dives into specific flagged packages
+- Combine with the `/socket-dep-upgrade` skill to fix vulnerabilities discovered during the scan
 - Enterprise customers should use reachability analysis to prioritize fixes — focus on `reachable` vulnerabilities first
 - Scan results are available in the Socket dashboard for team visibility and historical tracking
 - If `socket` is not installed, `npx socket` works as a drop-in replacement for all commands
@@ -274,4 +274,4 @@ Produce a human-readable compliance summary:
 - For enterprise compliance, generate SBOMs in both CycloneDX and SPDX formats
 - Re-audit after adding or updating dependencies — license information can change between versions
 - When flagging GPL dependencies, check if they are dev-only — GPL in devDependencies is generally lower risk for commercial projects
-- Use the `/inspect` skill to deep-dive into specific packages flagged during the audit
+- Use the `/socket-inspect` skill to deep-dive into specific packages flagged during the audit

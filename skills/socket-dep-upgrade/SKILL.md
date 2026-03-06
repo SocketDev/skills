@@ -1,5 +1,5 @@
 ---
-name: dep-upgrade
+name: socket-dep-upgrade
 description: Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration.
 ---
 
@@ -29,7 +29,7 @@ If `socket` is not installed globally, use `npx` to run it without installing:
 npx socket fix --all --no-apply-fixes --json
 ```
 
-All `socket fix` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `setup` skill.
+All `socket fix` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `socket-setup` skill.
 
 ## Update Strategy
 
@@ -129,7 +129,7 @@ Iterate until everything passes:
 
 1. **Build the project** to check for compile/type errors
 2. **Run the full test suite** and fix any failing tests
-3. **Run the `/scan` skill** to confirm no new vulnerabilities were introduced by the upgrades
+3. **Run the `/socket-scan` skill** to confirm no new vulnerabilities were introduced by the upgrades
 4. **Re-run `socket fix --all --no-apply-fixes --json`** to verify no fixable vulnerabilities remain
 
 If tests fail after fixing, investigate each failure:
@@ -149,7 +149,7 @@ Fixing all vulnerabilities in a Node.js project (success case):
    - Major bump applied → 2 test failures in route tests
    - Fix route handler code to match new Express API
    - Tests pass → commit → reports success
-6. All subagents succeeded → run `/scan` skill → no new vulnerabilities
+6. All subagents succeeded → run `/socket-scan` skill → no new vulnerabilities
 
 Failure case — main agent stops on first failure:
 
@@ -180,19 +180,19 @@ To manage context window limits without subagents:
 - **`socket fix` returns no results**: The project may have no fixable vulnerabilities, or the Socket API may not cover the project's ecosystems. Check that manifest and lock files exist in the repository.
 - **`socket fix --id` fails with "GHSA not found"**: The advisory ID may be incorrect or not yet indexed. Try searching by CVE ID or PURL instead.
 - **`socket fix` modifies files but tests fail**: The subagent (or main agent in fallback mode) should revert the changes with `git checkout -- .` and try an alternative version. Never leave the project in a broken state.
-- **Authentication required**: Some `socket fix` features require enterprise authentication. Run `socket login` or set `SOCKET_CLI_API_TOKEN`. Use the `/setup` skill for guidance.
+- **Authentication required**: Some `socket fix` features require enterprise authentication. Run `socket login` or set `SOCKET_CLI_API_TOKEN`. Use the `/socket-setup` skill for guidance.
 - **Network errors during fix**: `socket fix` contacts the Socket API to compute upgrade paths. Check network connectivity and try again.
 
-## How This Differs from `/dep-patch`
+## How This Differs from `/socket-dep-patch`
 
-| | `/dep-upgrade` (this skill) | `/dep-patch` |
+| | `/socket-dep-upgrade` (this skill) | `/socket-dep-patch` |
 |---|---|---|
 | **Primary tool** | `socket fix` | `socket-patch apply` |
 | **What it does** | Upgrades dependency versions to fix CVEs | Applies binary-level patches without changing versions |
 | **Version changes?** | Yes | No |
 | **Code changes needed?** | Possibly (API migration for major bumps) | No |
 
-Use `/dep-upgrade` when you want full version upgrades. Use `/dep-patch` when you need fixes without version churn.
+Use `/socket-dep-upgrade` when you want full version upgrades. Use `/socket-dep-patch` when you need fixes without version churn.
 
 ## Tips
 
@@ -204,6 +204,6 @@ Use `/dep-upgrade` when you want full version upgrades. Use `/dep-patch` when yo
 - **Stop on failure** — if any single update cannot be completed, halt the entire process and report to the user rather than continuing with a broken state
 - Commit after each successful update so progress is saved and failures can be cleanly reverted
 - Use `--minimum-release-age 2d` to avoid upgrading to freshly-published versions
-- Combine with the `/inspect` skill to compare security profiles before and after upgrades
-- After all fixes are applied, run the `/scan` skill to verify no new risks were introduced
+- Combine with the `/socket-inspect` skill to compare security profiles before and after upgrades
+- After all fixes are applied, run the `/socket-scan` skill to verify no new risks were introduced
 - For monorepos, use `--include` and `--exclude` to target specific workspaces
