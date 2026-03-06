@@ -33,7 +33,8 @@ Use `/socket-dep-patch` when you want to fix vulnerabilities without risking bre
 
 ## Prerequisites
 
-No API key is required for `socket-patch apply`. It works on the free tier.
+- No API key is required for `socket-patch`. It works on the free tier.
+- **Dependencies must be installed before patching.** `socket-patch` operates on installed packages (e.g. `node_modules/`). If dependencies are not yet installed, run the project's install command first (e.g. `npm install`, `pnpm install`, `bun install`, `pip install -r requirements.txt`).
 
 ## Step 1: Install socket-patch
 
@@ -53,25 +54,25 @@ Verify installation:
 socket-patch --version
 ```
 
-## Step 2: Scan for Patchable Vulnerabilities
+## Step 2: Scan for Available Patches
 
-Before applying patches, do a dry run to see what would be patched:
+Run `socket-patch scan` to discover which installed packages have Socket patches available. This downloads patch metadata to the `.socket/` folder without modifying any packages.
 
 ```
-socket-patch apply --dry-run
+socket-patch scan
 ```
 
-This shows which packages have Socket patches available without modifying anything.
+Review the output to see which packages have patches available and what vulnerabilities they address.
 
 ## Step 3: Apply Patches
 
-Apply all available patches:
+Apply all patches discovered by `socket-patch scan`:
 
 ```
 socket-patch apply
 ```
 
-This modifies vulnerable packages in-place within `node_modules/` (or the equivalent for other ecosystems) by applying binary-level fixes. No version numbers change in your manifest or lock files.
+This applies patches from the `.socket/` folder to installed packages (e.g. within `node_modules/`). No version numbers change in your manifest or lock files.
 
 After patching, verify the project still works:
 
@@ -81,7 +82,7 @@ After patching, verify the project still works:
 
 ## Step 4: Verify
 
-1. Run `socket-patch apply --dry-run` to confirm all available patches were applied
+1. Run `socket-patch scan` to confirm all available patches were applied
 2. Run the build to ensure nothing breaks
 3. Commit `.socket/manifest.json` to version control to track which patches are applied
 
@@ -96,8 +97,9 @@ To keep patches applied automatically in CI/CD or via postinstall hooks, use the
 ## Error Handling
 
 - **`socket-patch` not found**: Install it using one of the methods in Step 1. For CI, ensure the install step runs before `socket-patch apply`.
-- **No patches available**: This means Socket doesn't have binary patches for the current vulnerabilities. Consider using the `/socket-dep-upgrade` skill to upgrade versions instead.
-- **Build fails after patching**: Run `socket-patch apply --dry-run` to identify which patch caused the issue. Report the failing patch so the user can decide whether to skip it.
+- **"No .socket folder found, skipping patch application"**: Dependencies may not be installed, or `socket-patch scan` was not run first. Ensure dependencies are installed (e.g. `npm install`), then run `socket-patch scan` before `socket-patch apply`.
+- **No patches available**: Run `socket-patch scan` first to check. If scan finds nothing, Socket doesn't have binary patches for the current vulnerabilities. Consider using the `/socket-dep-upgrade` skill to upgrade versions instead.
+- **Build fails after patching**: Run `socket-patch scan` to identify which patches are available, then apply selectively. Report the failing patch so the user can decide whether to skip it.
 - **Permission errors**: Ensure write access to `node_modules/` or the equivalent dependency directory.
 
 ## Tips
