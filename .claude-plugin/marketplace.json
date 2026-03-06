@@ -49,12 +49,6 @@
       "source": "./skills/audit",
       "skills": "./",
       "description": "Generate compliance reports, SBOMs, and license audits for your project. Produces CycloneDX/SPDX output, aggregates license usage, flags problematic licenses, and creates a compliance summary using Socket data."
-    },
-    {
-      "name": "investigate",
-      "source": "./skills/investigate",
-      "skills": "./",
-      "description": "Investigate a security incident — given a CVE, advisory, or compromised package, determine exposure, assess blast radius, check for indicators of compromise, and recommend remediation."
     }
   ]
 }
