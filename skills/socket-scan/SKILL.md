@@ -1,14 +1,17 @@
 ---
 name: socket-scan
-description: Run a full dependency scan using the Socket CLI. Creates a scan in the
-  Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks,
-  performs Tier 1 reachability analysis for enterprise customers, and provides license
-  compliance auditing with SBOM generation.
+description: Run a dependency scan using the Socket CLI. Defaults to a temporary read-only
+  scan (--tmp) that returns results without persisting to the dashboard. Creates a
+  persistent dashboard scan only when the user is authenticated with a full account.
+  Includes reachability analysis for enterprise customers and license compliance auditing
+  with SBOM generation.
 ---
 
 # Research Scan
 
-Run a full dependency scan using the Socket CLI. Automatically discovers all project dependencies, checks them for vulnerabilities and supply-chain risks, creates a scan visible in the Socket dashboard, performs Tier 1 reachability analysis for enterprise customers, and provides license compliance auditing with SBOM generation.
+Run a dependency scan using the Socket CLI. By default, scans run in **temporary read-only mode** (`--tmp`) — results are returned locally without creating a persistent entry in the Socket dashboard. This is safe for public-token users and avoids cluttering the dashboard during development.
+
+When the user is authenticated with a full account (free or enterprise) and explicitly wants results saved, the scan can be promoted to a **persistent dashboard scan**.
 
 ## When to Use
 
@@ -26,43 +29,78 @@ Run a full dependency scan using the Socket CLI. Automatically discovers all pro
 
 ## Prerequisites
 
-**A Socket account and API token are required.** All scans (`socket scan create`) require authentication — there is no unauthenticated scan mode. Users without a Socket account should use `/socket-dep-patch` (binary patches) or `sfw` (firewall) instead, and create an account at https://socket.dev when they need scanning capabilities.
+<!-- BEGIN_SECTION:cli-setup.md -->
+### Socket CLI Setup
 
-The Socket CLI must be installed and authenticated. Verify readiness:
+The Socket CLI must be installed. Verify:
 
 ```
 socket --version
 ```
 
-Verify authentication before attempting any scan:
+If not installed, install globally:
+
+```
+npm install -g socket
+```
+
+If `socket` is not installed globally, `npx socket` works as a drop-in prefix for all commands in this skill (e.g., `npx socket scan create ...`).
+
+#### Authentication
+
+**For users without a Socket account:** Run `socket login --public` to activate a built-in public token. This provides limited access to all CLI features (`socket fix`, `socket scan`, `sfw`, `socket-patch`) with rate limits. No account creation is needed for basic usage.
+
+**For users with an account:** Authenticate with one of:
+
+- **Interactive login**: `socket login` (stores credentials in `~/.socket/`)
+- **Environment variable**: Set `SOCKET_CLI_API_TOKEN` in your shell profile or CI environment
+
+Verify account authentication:
 
 ```
 socket organization list
 ```
 
-If this fails, the user needs to authenticate with `socket login` or set the `SOCKET_CLI_API_TOKEN` environment variable. Use the `/socket-setup` skill for guidance.
-
-If `socket` is not installed globally, use `npx` to run it without installing:
-
-```
-npx socket scan create --repo . --json
-```
-
-All `socket` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `/socket-setup` skill.
+If authentication fails or the CLI is not installed, use the `/socket-setup` skill for detailed guidance including Node.js installation, PATH troubleshooting, and CI/CD token configuration.
+<!-- END_SECTION:cli-setup.md -->
 
 For enterprise features (reachability analysis), an enterprise subscription is required in addition to authentication.
 
 ## Scan Workflow
 
-### 1. Create a Full Scan
+### 1. Determine Scan Mode
 
-Run a full dependency scan on the current repository:
+Before scanning, determine whether to use temporary or persistent mode:
+
+1. **Check authentication level** — run `socket organization list` to see if the user has a full account with org access
+2. **If it fails or returns empty** — the user is on the public token. Use **temporary mode** (default).
+3. **If it succeeds** — the user has a full account. Ask whether they want results saved to the dashboard:
+   - If yes (or if they explicitly asked to "create a scan") → **persistent mode**
+   - If no, or if the scan is for development/exploration purposes → **temporary mode** (default)
+
+**Default to temporary mode.** Only use persistent mode when the user has a full account AND wants results saved.
+
+### 2. Run the Scan
+
+#### Temporary mode (default)
+
+Run a read-only scan that returns results locally without persisting to the Socket dashboard:
+
+```
+socket scan create --repo . --tmp --json
+```
+
+This is the default for all users. It works with the public token, does not create a dashboard entry, and is safe to run repeatedly during development.
+
+#### Persistent mode (authenticated users only)
+
+Run a full scan that creates a persistent entry in the Socket dashboard:
 
 ```
 socket scan create --repo . --json
 ```
 
-The CLI automatically discovers and parses all manifest and lock files in the repository — no need to manually extract dependencies. The scan is uploaded to the Socket dashboard where results can be viewed and shared.
+The scan is uploaded to the Socket dashboard where results can be viewed, shared, and tracked over time.
 
 **For enterprise customers**, specify the organization to associate the scan:
 
@@ -75,12 +113,13 @@ socket scan create --repo . --org <org-slug> --json
 | Flag | Purpose |
 |---|---|
 | `--repo <path>` | Path to the repository to scan (use `.` for current directory) |
-| `--org <org-slug>` | Organization slug for enterprise scans |
+| `--tmp` | Temporary read-only scan — results returned locally, not persisted to dashboard (default) |
+| `--org <org-slug>` | Organization slug for enterprise scans (persistent mode only) |
 | `--json` | Output results as JSON for easier parsing |
-| `--branch <name>` | Associate the scan with a specific branch |
-| `--commit <sha>` | Associate the scan with a specific commit |
+| `--branch <name>` | Associate the scan with a specific branch (persistent mode only) |
+| `--commit <sha>` | Associate the scan with a specific commit (persistent mode only) |
 
-### 2. Interpret Results
+### 3. Interpret Results
 
 When using `--json`, the output is a JSON object with these top-level keys:
 
@@ -110,7 +149,7 @@ Triage alerts by severity:
 - **Malware**: If any package is flagged as malware, display a prominent warning. Malware findings should be treated as the highest priority — advise the user to remove the package immediately.
 - **Medium / Low severity**: Summarize these for the user. Group by category (vulnerability, quality, maintenance, license) and provide a brief overview rather than listing each one individually.
 
-### 3. Reachability Analysis (Enterprise Only)
+### 4. Reachability Analysis (Enterprise Only)
 
 For enterprise customers, run Tier 1 reachability analysis to determine whether vulnerabilities are actually reachable in the project's code:
 
@@ -131,7 +170,7 @@ Reachability analysis generates a `.socket.facts.json` file in the project root 
 
 **Skip this step entirely for non-enterprise users** — reachability analysis requires an enterprise subscription with an authenticated organization.
 
-### 4. Act on Findings
+### 5. Act on Findings
 
 Based on scan results, cross-reference other skills to resolve issues:
 
@@ -140,7 +179,7 @@ Based on scan results, cross-reference other skills to resolve issues:
 - **Packages with Socket patches available** — use the `/socket-dep-patch` skill to apply security patches
 - **Unused dependencies** — use the `/socket-dep-cleanup` skill to remove packages that are no longer needed
 
-### 5. License & Compliance Audit
+### 6. License & Compliance Audit
 
 For each dependency in the scan results, collect license information using the Socket Batch PURL API:
 
@@ -175,7 +214,7 @@ Flag the following issues for user attention:
 - **License conflicts**: Dependencies whose licenses are incompatible with each other or with the project's own license
 - **Dual-licensed packages**: Note when packages offer multiple license options (e.g., MIT OR Apache-2.0)
 
-### 6. Generate SBOM
+### 7. Generate SBOM
 
 Generate an SBOM in one of the standard formats:
 
@@ -232,7 +271,7 @@ Create an `sbom.spdx.json` (SPDX 2.3) with this structure:
 
 Ask the user which format they prefer. Default to CycloneDX if not specified.
 
-### 7. Compliance Summary
+### 8. Compliance Summary
 
 Produce a human-readable compliance summary:
 
@@ -259,7 +298,7 @@ Produce a human-readable compliance summary:
 ## Error Handling
 
 - **`socket: command not found`**: Install the Socket CLI with `npm install -g socket` or use `npx socket` as a prefix. If you need a permanent installation, use the `/socket-setup` skill.
-- **`socket scan create` fails with authentication error**: All scans require authentication. Run `socket login` or set the `SOCKET_CLI_API_TOKEN` environment variable. If the user does not have a Socket account, they need to create one at https://socket.dev. For users without an account, suggest `/socket-dep-patch` or `sfw` as alternatives.
+- **`socket scan create` fails with authentication error**: Run `socket login` or set the `SOCKET_CLI_API_TOKEN` environment variable. For users without an account, run `socket login --public` to activate the built-in public token (limited rate). If already using the public token and hitting rate limits, suggest creating a free account at https://socket.dev.
 - **`socket scan reach` returns "not available"**: Reachability analysis requires an enterprise subscription. Skip this step for free-tier users.
 - **No manifest/lock files found**: The scan relies on manifest files (`package.json`, `requirements.txt`, `go.mod`, etc.). Ensure the `--repo` path points to a directory containing these files.
 - **Scan times out**: Large monorepos with many manifest files may take longer. Try limiting the scan to a specific subdirectory with `--repo ./path/to/subdir`.
@@ -269,16 +308,18 @@ Produce a human-readable compliance summary:
 
 ## Tips
 
+- Default to `--tmp` (temporary mode) for all scans — it's safe, fast, and works with the public token
+- Only omit `--tmp` when the user has a full account and explicitly wants results saved to the dashboard
 - Always run a scan after adding, updating, or removing dependencies to verify the project's security posture
 - Use `--json` for machine-readable output that is easier to parse and summarize
 - Combine with the `/socket-inspect` skill for deep-dives into specific flagged packages
 - Combine with the `/socket-dep-upgrade` skill to fix vulnerabilities discovered during the scan
 - Enterprise customers should use reachability analysis to prioritize fixes — focus on `reachable` vulnerabilities first
-- Scan results are available in the Socket dashboard for team visibility and historical tracking
+- Persistent scan results are available in the Socket dashboard for team visibility and historical tracking
 - If `socket` is not installed, `npx socket` works as a drop-in replacement for all commands
 - Run a compliance audit before releasing a new version to catch license issues early
 - For enterprise compliance, generate SBOMs in both CycloneDX and SPDX formats
 - Re-audit after adding or updating dependencies — license information can change between versions
 - When flagging GPL dependencies, check if they are dev-only — GPL in devDependencies is generally lower risk for commercial projects
 - Use the `/socket-inspect` skill to deep-dive into specific packages flagged during the audit
-- **All scans require a Socket account and API token.** For users without an account, suggest `/socket-dep-patch` (binary patches) or `sfw` (firewall) as alternatives that work without authentication
+- Scanning works with the public token (`socket login --public`) for users without an account, subject to rate limits. For full-rate access and dashboard features, users need a free account at https://socket.dev

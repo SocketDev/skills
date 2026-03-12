@@ -1,47 +1,119 @@
 ---
 name: socket-fix
-description: Holistic dependency repair — orchestrates cleanup, replacement, patching,
-  and upgrades in a single workflow with three aggressiveness levels (conservative,
-  cautious, full). Delegates to /socket-dep-cleanup, /socket-dep-replace, /socket-dep-patch, and /socket-dep-upgrade
-  as subroutines.
+description: Fix dependency security issues — either scan and fix everything (requires
+  /socket-scan), or target a single named package. Orchestrates /socket-dep-cleanup,
+  /socket-dep-replace, /socket-dep-patch, and /socket-dep-upgrade as subskills.
 ---
 
 # Fix
 
-Holistic dependency repair — orchestrate `/socket-dep-cleanup`, `/socket-dep-replace`, `/socket-dep-patch`, and `/socket-dep-upgrade` into a single phased workflow. Choose from three aggressiveness levels (conservative, cautious, full) to control how far the repair goes.
+Fix dependency security issues in your project. This skill operates in two modes:
 
-This skill is an **orchestrator**. It does not have its own tools — it delegates every concrete action to the dep-* skills.
+- **Fix All** — scan the entire project and systematically resolve all findings
+- **Fix Package** — target a single named package and resolve its issues
+
+This skill is an **orchestrator**. It delegates concrete actions to the subskills: `/socket-dep-cleanup`, `/socket-dep-replace`, `/socket-dep-patch`, and `/socket-dep-upgrade`.
 
 ## When to Use
 
+- The user wants to fix all dependency security issues in their project (Fix All mode)
+- The user wants to fix a specific vulnerable, unused, or flagged package (Fix Package mode)
 - The user wants a one-shot "fix everything" for their dependencies
 - The user wants to clean up, patch, and upgrade in a single coordinated pass
 - The user asks for a safe or conservative dependency repair
 - The user wants to progressively increase aggressiveness (start safe, escalate if needed)
+- The user names a specific package, GHSA, CVE, or PURL they want fixed
+
+## Mode Detection
+
+Determine which mode to use from the user's prompt:
+
+- **Fix All** — "fix everything", "fix all dependencies", "fix my project", "scan and fix", or no specific package named
+- **Fix Package** — "fix lodash", "fix express@4.17.1", "fix GHSA-xxxx-xxxx-xxxx", or any prompt that names a specific package, PURL, GHSA, or CVE
+
+If ambiguous, ask: **"Do you want to fix all dependencies or a specific package?"**
+
+---
+
+## Fix All Mode
+
+Scan the project with `/socket-scan`, then systematically resolve findings using subskills. Choose from three aggressiveness levels to control how far the repair goes.
 
 ## Prerequisites
 
-This orchestrator delegates to sub-skills with mixed authentication requirements:
+**`/socket-scan` must be working.** Fix All mode requires a full scan to know what to fix.
 
-- `/socket-dep-cleanup` — **NO** account required
-- `/socket-dep-patch` (`socket-patch apply`) — **NO** account required
-- `/socket-dep-upgrade` (`socket fix`, `socket scan create`) — **account REQUIRED**
-- `/socket-dep-replace` (`socket fix`, `socket scan create`) — **account REQUIRED**
+<!-- BEGIN_SECTION:cli-setup.md -->
+### Socket CLI Setup
 
-**Without a Socket account**, only Level 1 (Conservative) is fully available, as it uses only cleanup and patches. Levels 2 and 3 use `socket fix` for vulnerability discovery and upgrades, which requires authentication.
+The Socket CLI must be installed. Verify:
 
-If the user does not have a Socket account and requests Level 2 or 3, explain the limitation and either:
-- Help them create an account at https://socket.dev, then proceed
-- Fall back to Level 1 (cleanup + patches only)
+```
+socket --version
+```
 
-## Step 1: Detect Environment
+If not installed, install globally:
+
+```
+npm install -g socket
+```
+
+If `socket` is not installed globally, `npx socket` works as a drop-in prefix for all commands in this skill (e.g., `npx socket scan create ...`).
+
+#### Authentication
+
+**For users without a Socket account:** Run `socket login --public` to activate a built-in public token. This provides limited access to all CLI features (`socket fix`, `socket scan`, `sfw`, `socket-patch`) with rate limits. No account creation is needed for basic usage.
+
+**For users with an account:** Authenticate with one of:
+
+- **Interactive login**: `socket login` (stores credentials in `~/.socket/`)
+- **Environment variable**: Set `SOCKET_CLI_API_TOKEN` in your shell profile or CI environment
+
+Verify account authentication:
+
+```
+socket organization list
+```
+
+If authentication fails or the CLI is not installed, use the `/socket-setup` skill for detailed guidance including Node.js installation, PATH troubleshooting, and CI/CD token configuration.
+<!-- END_SECTION:cli-setup.md -->
+
+**Do not proceed with Fix All mode until scanning works.** If the user cannot or will not set up Socket, offer Fix Package mode instead (which has lower requirements per subskill).
+
+## Step 1: Run Initial Scan
+
+Run `/socket-scan` to get a full picture of the project's dependency health. Use `--tmp` for a temporary read-only scan (the default — does not persist to the dashboard):
+
+```
+socket scan create --repo . --tmp --json
+```
+
+Parse the scan results to build a prioritized list of issues:
+
+1. **Malware** — packages flagged as malware (highest priority)
+2. **Critical/high CVEs** — known vulnerabilities with available fixes
+3. **Medium/low CVEs** — lower-severity vulnerabilities
+4. **Low Socket scores** — packages with quality, maintenance, or supply-chain concerns
+5. **Unused dependencies** — packages with no detected usage in the codebase
+
+Report the scan summary to the user:
+
+```
+Scan Results:
+  Total packages: 150
+  Critical: 2, High: 5, Medium: 12, Low: 25
+  Malware: 0
+  Low-score packages: 3
+```
+
+## Step 2: Detect Environment
 
 Before any repair work, identify the project's ecosystem and dependency landscape.
 
 1. **Detect ecosystems** — check for manifest and lock files (`package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, etc.) to determine which package managers are in use
 2. **Parse dependencies** — read manifest files to build a list of all direct dependencies (production and dev)
 3. **Detect CI** — check for CI/CD configuration (`.github/workflows/`, `.gitlab-ci.yml`, `bitbucket-pipelines.yml`, etc.) to understand the project's build and test infrastructure
-4. **Ensure dependencies are installed** — check for the presence of the dependency directory (`node_modules/`, `vendor/`, etc.). If dependencies are not installed, run the project's install command using the detected package manager (e.g. `npm install`, `pnpm install`, `bun install`). This is required for both patching (Phase 1b) and accurate unused dependency detection (Phase 1a).
+4. **Ensure dependencies are installed** — check for the presence of the dependency directory (`node_modules/`, `vendor/`, etc.). If dependencies are not installed, run the project's install command using the detected package manager (e.g. `npm install`, `pnpm install`, `bun install`). This is required for both patching and accurate unused dependency detection.
 
 Report a brief summary:
 
@@ -55,7 +127,7 @@ Environment detected:
   Dependencies installed: yes (node_modules/ present)
 ```
 
-## Step 2: Select Aggressiveness Level
+## Step 3: Select Aggressiveness Level
 
 Ask the user which level they want, or auto-detect from their prompt:
 
@@ -95,7 +167,7 @@ For each dependency in the project:
 
 Execute the `/socket-dep-patch` workflow:
 
-1. Ensure dependencies are installed (should have been verified in Step 1)
+1. Ensure dependencies are installed (should have been verified in Step 2)
 2. Run `socket-patch scan` to discover available patches
 3. Apply all patches with `socket-patch apply`
 3. Build and test to verify nothing broke
@@ -113,9 +185,9 @@ Execute Phase 1a (unused dep removal) and Phase 1b (binary patches) as described
 
 ### Phase 2b: Identify ONE Highest-Value Risky Change
 
-After Level 1 completes, identify the single highest-value change that carries some risk. Prioritize in this order:
+After Level 1 completes, use the scan results from Step 1 to identify the single highest-value change that carries some risk. Prioritize in this order:
 
-1. **Critical/high CVE upgrade** — a dependency with a known critical or high severity vulnerability that requires a version bump (use `socket fix --all --no-apply-fixes --json` to discover)
+1. **Critical/high CVE upgrade** — a dependency with a known critical or high severity vulnerability that requires a version bump
 2. **Replacement of a flagged dependency** — a dependency with a low Socket score or known maintenance issues that should be swapped for a better alternative (use `/socket-dep-replace`)
 3. **Ambiguous unused dependency** — a package that is *probably* unused but was excluded from Phase 1a due to ambiguity (e.g., a `@types/*` package whose base package is not used, or a build plugin that may no longer be needed)
 4. **Safe minor version bump** — a dependency with a minor/patch update available that fixes a medium-severity issue
@@ -148,7 +220,7 @@ Aggressive repair. Apply everything possible, skip and continue on individual fa
 
 ### Phase 3a: Safe Upgrades
 
-1. Run `socket fix --all --no-apply-fixes --json` to discover all fixable vulnerabilities
+1. Use scan results and `socket fix --all --no-apply-fixes --json` to discover all fixable vulnerabilities
 2. Filter to **minor and patch bumps only** (`--no-major-updates`)
 3. For each vulnerability, dispatch `/socket-dep-upgrade` to apply the fix
 4. **Skip and continue on failure** — if a single upgrade fails after retries, log the failure and move on to the next one (this diverges from `/socket-dep-upgrade`'s default "bail on failure" behavior — intentional for Level 3's aggressive posture)
@@ -185,12 +257,12 @@ Aggressive repair. Apply everything possible, skip and continue on individual fa
 
 ---
 
-## Step 3: Post-Repair Verification
+## Step 4: Post-Repair Scan
 
 After all phases complete (regardless of level):
 
-1. Run `/socket-scan` to get a fresh security scan
-2. Compare findings against the pre-repair state
+1. Run `/socket-scan` again to get a fresh security scan
+2. Compare findings against the initial scan from Step 1
 3. Report a summary:
 
 ```
@@ -209,13 +281,89 @@ Repair Complete (Level 2 — Cautious)
     - express@4.17.1: GHSA-yyyy-yyyy-yyyy (critical) — requires major bump to v5, not attempted at Level 2
 ```
 
+---
+
+## Fix Package Mode
+
+Target a single named package and resolve its issues. Does not require a full scan — just operates on the specified package.
+
+## Step 1: Identify the Target
+
+The user may specify a package by:
+- **Package name** — `lodash`, `express`
+- **Name + version** — `lodash@4.17.20`
+- **PURL** — `pkg:npm/lodash@4.17.20`
+- **Advisory ID** — `GHSA-xxxx-xxxx-xxxx`, `CVE-2024-12345`
+
+If the user provides an advisory ID, resolve it to the affected package(s) using `socket fix --id <ID> --no-apply-fixes --json`.
+
+## Step 2: Diagnose
+
+Investigate what's wrong with the target package:
+
+1. **Check if it's installed** — verify the package is in the manifest/lock file
+2. **Check for vulnerabilities** — run `socket fix --id pkg:<ecosystem>/<name>@<version> --no-apply-fixes --json` (requires Socket account) or check if the user provided a specific advisory
+3. **Check for usage** — search the codebase for imports and references (useful to know if cleanup is an option)
+4. **Check for patches** — run `socket-patch scan` and check if patches are available for this package
+
+Report findings:
+
+```
+Package: lodash@4.17.20
+
+  Vulnerabilities:
+    - GHSA-xxxx-xxxx-xxxx (high) — prototype pollution, fixed in 4.17.21
+
+  Usage: 6 imports across 3 files
+    - src/utils/helper.ts (merge, cloneDeep)
+    - src/api/handler.ts (get, set)
+    - src/components/Table.tsx (sortBy, groupBy)
+
+  Socket patches available: yes (1 patch)
+
+  Possible actions:
+    1. Patch — apply binary patch without version change (/socket-dep-patch)
+    2. Upgrade — bump to 4.17.21 to fix the CVE (/socket-dep-upgrade)
+    3. Replace — swap for an alternative package (/socket-dep-replace)
+    4. Remove — remove if unused (/socket-dep-cleanup)
+```
+
+## Step 3: Recommend and Execute
+
+Based on the diagnosis, recommend the best action. If multiple actions apply, prioritize in this order:
+
+1. **Upgrade** — if a version bump fixes the issue and is available, prefer this (most complete fix)
+2. **Patch** — if a binary patch is available and the user wants to avoid version changes
+3. **Replace** — if the package is unmaintained, has a low Socket score, or the user specifically wants an alternative
+4. **Remove** — if the package is unused
+
+Present the recommendation and ask for approval. Then delegate to the appropriate subskill:
+
+- Vulnerability fix → `/socket-dep-upgrade`
+- Binary patch → `/socket-dep-patch`
+- Swap for alternative → `/socket-dep-replace`
+- Remove unused → `/socket-dep-cleanup`
+
+If the user has a preference ("just patch it", "upgrade it", "replace it with dayjs"), skip the recommendation and go directly to the requested subskill.
+
+## Step 4: Verify
+
+After the subskill completes:
+
+1. Build and test the project
+2. Confirm the issue is resolved
+3. Report the result
+
+---
+
 ## Error Handling
 
+- **`/socket-scan` not working (Fix All mode)**: Do not proceed with Fix All. Offer to run `/socket-setup` first, or suggest Fix Package mode as an alternative.
+- **Socket CLI not installed**: Run `/socket-setup` to install and authenticate. For users without an account, `/socket-setup` will run `socket login --public` to activate the built-in public token, which provides limited access to all CLI features.
+- **Rate limits hit**: The public token has rate limits. If the user hits them, suggest creating a free account at https://socket.dev to remove limits.
 - **No dependencies found**: The project may not have manifest files in the expected locations. Check for monorepo structures or non-standard layouts.
 - **Build/test command unknown**: Ask the user for the correct build and test commands before starting repair.
-- **Socket CLI not available**: Binary patches and `socket fix` require the Socket CLI. Suggest running `/socket-setup` first, or fall back to cleanup-only mode (Phase 1a only).
 - **All upgrades fail in Level 3**: If every upgrade attempt fails, report what was tried and suggest the user investigate manually. The cleanup and patch phases may still have succeeded.
-- **Authentication required**: Levels 2 and 3 use `socket fix` which requires a Socket account and API token. If the user is not authenticated, fall back to Level 1 (cleanup + patches only). To authenticate, run `socket login` or set `SOCKET_CLI_API_TOKEN`. To create an account, visit https://socket.dev.
 - **Network errors**: `socket fix` and `socket-patch` require network access. Check connectivity and retry once before skipping.
 
 ## Tips
@@ -225,6 +373,7 @@ Repair Complete (Level 2 — Cautious)
 - Level 3 is best for major cleanup efforts where you're prepared to review and test extensively
 - Each level builds on the previous one, so you can start conservative and escalate
 - All changes are committed individually, making it easy to revert any single change
-- Run `/socket-scan` before and after repair to measure improvement
+- Fix Package mode is useful when you already know which package is problematic
+- Fix All mode gives you the full picture first, so you fix the most important issues
 - For monorepos, consider running repair on each workspace individually
 - Combine with `/socket-setup` to ensure the Socket CLI is properly configured before starting

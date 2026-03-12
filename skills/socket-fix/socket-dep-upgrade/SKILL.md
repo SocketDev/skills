@@ -17,29 +17,40 @@ Use the `socket fix` command to discover vulnerable dependencies, compute safe u
 
 ## Prerequisites
 
-**A Socket account and API token are required.** All `socket fix` commands require authentication — there is no unauthenticated mode. Users without a Socket account should use `/socket-dep-patch` (binary patches that work without authentication) instead, and create an account at https://socket.dev when they need upgrade capabilities.
+<!-- BEGIN_SECTION:cli-setup.md -->
+### Socket CLI Setup
 
-The Socket CLI must be installed and authenticated. Verify readiness:
+The Socket CLI must be installed. Verify:
 
 ```
 socket --version
 ```
 
-Verify authentication before attempting any fix:
+If not installed, install globally:
+
+```
+npm install -g socket
+```
+
+If `socket` is not installed globally, `npx socket` works as a drop-in prefix for all commands in this skill (e.g., `npx socket scan create ...`).
+
+#### Authentication
+
+**For users without a Socket account:** Run `socket login --public` to activate a built-in public token. This provides limited access to all CLI features (`socket fix`, `socket scan`, `sfw`, `socket-patch`) with rate limits. No account creation is needed for basic usage.
+
+**For users with an account:** Authenticate with one of:
+
+- **Interactive login**: `socket login` (stores credentials in `~/.socket/`)
+- **Environment variable**: Set `SOCKET_CLI_API_TOKEN` in your shell profile or CI environment
+
+Verify account authentication:
 
 ```
 socket organization list
 ```
 
-If this fails, the user needs to authenticate with `socket login` or set the `SOCKET_CLI_API_TOKEN` environment variable. Use the `/socket-setup` skill for guidance.
-
-If `socket` is not installed globally, use `npx` to run it without installing:
-
-```
-npx socket fix --all --no-apply-fixes --json
-```
-
-All `socket fix` commands in this skill can be prefixed with `npx` as a drop-in replacement. If you need a permanent installation, use the `/socket-setup` skill.
+If authentication fails or the CLI is not installed, use the `/socket-setup` skill for detailed guidance including Node.js installation, PATH troubleshooting, and CI/CD token configuration.
+<!-- END_SECTION:cli-setup.md -->
 
 ## Update Strategy
 
@@ -190,7 +201,7 @@ To manage context window limits without subagents:
 - **`socket fix` returns no results**: The project may have no fixable vulnerabilities, or the Socket API may not cover the project's ecosystems. Check that manifest and lock files exist in the repository.
 - **`socket fix --id` fails with "GHSA not found"**: The advisory ID may be incorrect or not yet indexed. Try searching by CVE ID or PURL instead.
 - **`socket fix` modifies files but tests fail**: The subagent (or main agent in fallback mode) should revert the changes with `git checkout -- .` and try an alternative version. Never leave the project in a broken state.
-- **Authentication required**: All `socket fix` commands require a Socket account and API token. Run `socket login` or set `SOCKET_CLI_API_TOKEN`. Use the `/socket-setup` skill for guidance. For users without an account, suggest `/socket-dep-patch` as an alternative.
+- **Authentication required**: Run `socket login` or set `SOCKET_CLI_API_TOKEN`. For users without an account, run `socket login --public` to activate the built-in public token (limited rate). Use the `/socket-setup` skill for guidance.
 - **Network errors during fix**: `socket fix` contacts the Socket API to compute upgrade paths. Check network connectivity and try again.
 
 ## How This Differs from `/socket-dep-patch`

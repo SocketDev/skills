@@ -150,24 +150,17 @@ Scan dependencies and inspect individual packages for security risks.
 | `socket-inspect` | Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches. | [SKILL.md](skills/socket-inspect/SKILL.md) |
 | `socket-scan` | Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, performs Tier 1 reachability analysis for enterprise customers, and provides license compliance auditing with SBOM generation. | [SKILL.md](skills/socket-scan/SKILL.md) |
 
-#### Dependency Management
-
-Upgrade, patch, and clean up individual dependencies.
-
-| Name | Description | Documentation |
-|------|-------------|---------------|
-| `socket-dep-cleanup` | Evaluate and remove a single unused dependency from your project. Searches the entire codebase for all usages (imports, requires, config refs, scripts, type packages, indirect usage), reports findings, and performs full removal with verification. | [SKILL.md](skills/socket-dep-cleanup/SKILL.md) |
-| `socket-dep-patch` | Apply Socket's binary-level security patches without changing dependency versions. Uses socket-patch apply to fix vulnerabilities in-place. For CI/CD and infrastructure setup, use the /socket-setup skill. | [SKILL.md](skills/socket-dep-patch/SKILL.md) |
-| `socket-dep-replace` | Replace a dependency with an alternative package, eliminate it via code rewrite, or use socket-optimize for optimized replacements. | [SKILL.md](skills/socket-dep-replace/SKILL.md) |
-| `socket-dep-upgrade` | Use socket fix to find and update vulnerable dependencies one at a time, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration. | [SKILL.md](skills/socket-dep-upgrade/SKILL.md) |
-
 #### Fix
 
-Holistic dependency repair — orchestrate cleanup, patching, and upgrades in a single phased workflow.
+Holistic dependency repair — orchestrate cleanup, replacement, patching, and upgrades in a single phased workflow with individual subskills for each operation.
 
 | Name | Description | Documentation |
 |------|-------------|---------------|
-| `socket-fix` | Holistic dependency repair — orchestrates cleanup, patching, and upgrades in a single workflow with three aggressiveness levels (conservative, cautious, full). | [SKILL.md](skills/socket-fix/SKILL.md) |
+| `socket-dep-cleanup` | Evaluate and remove a single unused dependency from your project. Searches the entire codebase for all usages (imports, requires, config refs, scripts, type packages, indirect usage), reports findings, and performs full removal with verification. | [SKILL.md](skills/socket-fix/socket-dep-cleanup/SKILL.md) |
+| `socket-dep-patch` | Apply Socket's binary-level security patches without changing dependency versions. Uses socket-patch apply to fix vulnerabilities in-place, then verifies automated patching is configured so patches persist across installs. | [SKILL.md](skills/socket-fix/socket-dep-patch/SKILL.md) |
+| `socket-dep-replace` | Replace a dependency with an alternative package, eliminate it via code rewrite, or use socket-optimize for optimized replacements. | [SKILL.md](skills/socket-fix/socket-dep-replace/SKILL.md) |
+| `socket-dep-upgrade` | Use socket fix to find and update vulnerable dependencies one at a time, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration. | [SKILL.md](skills/socket-fix/socket-dep-upgrade/SKILL.md) |
+| `socket-fix` | Fix dependency security issues — either scan and fix everything (requires /socket-scan), or target a single named package. Orchestrates /socket-dep-cleanup, /socket-dep-replace, /socket-dep-patch, and /socket-dep-upgrade as subskills. | [SKILL.md](skills/socket-fix/SKILL.md) |
 <!-- END_SKILLS_TABLE -->
 
 ## Contributing

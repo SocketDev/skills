@@ -35,9 +35,10 @@ interface Marketplace {
 }
 
 /**
- * Collect all skills from the skills directory.
+ * Collect all skills from the skills directory, including subskills nested
+ * inside a parent skill directory.
  */
-export function collectSkills(skillsDir: string): Skill[] {
+export function collectSkills(skillsDir: string, basePath = "skills"): Skill[] {
   if (!fs.existsSync(skillsDir)) return [];
 
   const skills: Skill[] = [];
@@ -49,11 +50,19 @@ export function collectSkills(skillsDir: string): Skill[] {
     const meta = parseFrontmatter(fs.readFileSync(skillMd, "utf-8"));
     if (!meta.name || !meta.description) continue;
 
+    const skillPath = `${basePath}/${entry.name}`;
     skills.push({
       name: meta.name,
       description: meta.description,
-      path: `skills/${entry.name}`,
+      path: skillPath,
     });
+
+    // Recurse into subdirectories to discover subskills
+    const subSkills = collectSkills(
+      path.join(skillsDir, entry.name),
+      skillPath
+    );
+    skills.push(...subSkills);
   }
 
   return skills.sort((a, b) =>

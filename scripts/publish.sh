@@ -24,6 +24,7 @@ file_sig() {
 }
 
 run_generate() {
+  npx tsx scripts/inline-shared.ts
   npx tsx scripts/sync-versions.ts
   npx tsx scripts/generate-agents.ts
   npx tsx scripts/generate-cursor-plugin.ts
@@ -62,6 +63,9 @@ run_check() {
 
   # Extra explicit check for cursor-only artifacts
   npx tsx scripts/generate-cursor-plugin.ts --check
+
+  # Check shared sections are inlined
+  npx tsx scripts/inline-shared.ts --check
 
   echo "All generated artifacts are up to date."
 }

@@ -19,10 +19,42 @@ Research a package before you depend on it. This skill pulls every available sig
 
 ## Prerequisites
 
-- **A Socket account and API key are required.** Both the Batch PURL API (`SOCKET_SECURITY_API_KEY`) and the Socket CLI (`SOCKET_CLI_API_TOKEN` or `socket login`) require authentication. There is no unauthenticated mode for package inspection.
-- Users without an account should create one at https://socket.dev.
-- Use the `/socket-setup` skill for installation and authentication guidance.
-- Verify auth: `socket organization list`
+<!-- BEGIN_SECTION:cli-setup.md -->
+### Socket CLI Setup
+
+The Socket CLI must be installed. Verify:
+
+```
+socket --version
+```
+
+If not installed, install globally:
+
+```
+npm install -g socket
+```
+
+If `socket` is not installed globally, `npx socket` works as a drop-in prefix for all commands in this skill (e.g., `npx socket scan create ...`).
+
+#### Authentication
+
+**For users without a Socket account:** Run `socket login --public` to activate a built-in public token. This provides limited access to all CLI features (`socket fix`, `socket scan`, `sfw`, `socket-patch`) with rate limits. No account creation is needed for basic usage.
+
+**For users with an account:** Authenticate with one of:
+
+- **Interactive login**: `socket login` (stores credentials in `~/.socket/`)
+- **Environment variable**: Set `SOCKET_CLI_API_TOKEN` in your shell profile or CI environment
+
+Verify account authentication:
+
+```
+socket organization list
+```
+
+If authentication fails or the CLI is not installed, use the `/socket-setup` skill for detailed guidance including Node.js installation, PATH troubleshooting, and CI/CD token configuration.
+<!-- END_SECTION:cli-setup.md -->
+
+**For the Batch PURL API:** `SOCKET_SECURITY_API_KEY` is required for direct API calls. Users with a free or enterprise account can create an API key at `https://socket.dev/dashboard/org/{ORG}/settings/integrations/api-tokens`.
 
 ## Step 1 — Fetch Package Data via the Socket Batch PURL API
 
@@ -215,7 +247,7 @@ A clear, actionable recommendation: safe to use, use with caution (with reasons)
 
 ## Error Handling
 
-- **Batch PURL API returns no data**: The package may not exist in the specified ecosystem, or the package name may be misspelled. Verify the exact package name and ecosystem. For scoped npm packages, include the full scope (e.g., `@babel/core`). If `SOCKET_SECURITY_API_KEY` is not set, authentication is required. All data paths (Batch PURL API, Socket CLI) require a Socket account. Use the `/socket-setup` skill to help the user create an account and authenticate.
+- **Batch PURL API returns no data**: The package may not exist in the specified ecosystem, or the package name may be misspelled. Verify the exact package name and ecosystem. For scoped npm packages, include the full scope (e.g., `@babel/core`). If `SOCKET_SECURITY_API_KEY` is not set, run `/socket-setup` to configure authentication. For users without an account, `socket login --public` provides limited CLI access but the Batch PURL API requires `SOCKET_SECURITY_API_KEY` from a free or enterprise account.
 - **WebFetch fails on socket.dev page**: Fall back to API data only. Note in the report that the review is based on API data and include the socket.dev URL for the user to check manually.
 - **Package not found in Socket's database**: Socket may not index all packages in all ecosystems. Note this limitation and suggest checking the package's own repository and issue tracker directly.
 - **GitHub API rate limit**: If GitHub API calls for maintenance data are rate-limited, skip the maintenance health dimension and note it in the report.
@@ -229,5 +261,5 @@ A clear, actionable recommendation: safe to use, use with caution (with reasons)
 - Use inspect results to inform decisions with the `/socket-dep-upgrade`, `/socket-dep-patch`, and `/socket-scan` skills
 - Weigh Socket score and maintenance health over download count alone
 - Re-review periodically — a package's security posture changes over time
-- All inspection data paths require authentication — there are no unauthenticated fallbacks. Ensure the user has a Socket account before proceeding.
+- CLI-based inspection works with the public token (`socket login --public`) for users without an account, subject to rate limits. The Batch PURL API requires `SOCKET_SECURITY_API_KEY` from a free or enterprise account.
 - Prefer Socket patches over manual version pinning when available

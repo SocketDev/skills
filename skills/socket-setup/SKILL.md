@@ -53,8 +53,8 @@ Handle results:
 
 Ask the user whether they have or want to create a Socket account. There are three tiers:
 
-- **No account (free tools only)**: No sign-up required. Only `sfw` (firewall wrapper) and `socket-patch apply` (binary patches) are available. **Scanning (`socket scan create`), `socket fix`, package inspection (`/socket-inspect`), policy configuration, and dashboard access are NOT available without an account.**
-- **Free account**: Create one at https://socket.dev. Enables `socket scan create`, `socket fix`, and dashboard access. All free-tools-only features are also available.
+- **No account (public token)**: No sign-up required. The Socket CLI supports a built-in public token that provides limited access to CLI features including `socket fix`, `socket scan`, `sfw`, and `socket-patch apply`. Rate limits and feature restrictions apply compared to a full account, but basic vulnerability scanning and fixing work out of the box. **Dashboard access, organization management, and policy configuration are NOT available without an account.**
+- **Free account**: Create one at https://socket.dev. Removes public-token rate limits, enables full dashboard access and organization features. All CLI features are available.
   - Sign up / sign in: https://socket.dev/auth/login
   - Token page: https://socket.dev/dashboard/org/{ORG}/settings/integrations/api-tokens
 - **Enterprise account**: All free account features plus reachability analysis (`socket scan reach`), policy configuration (`socket.yml`), and organization-level management.
@@ -72,24 +72,46 @@ Store the tier choice for subsequent steps.
 - If `socketCli.ok` is false after install, error and suggest `npm install -g socket@latest`
 - PATH troubleshooting: if `socket` is not found, check that the npm global bin directory is in `PATH` (run `npm bin -g` to find it)
 
-## Step 4: Authenticate (requires a Socket account)
+## Step 4: Authenticate
+
+### No account (public token)
+
+If the user chose no-account in Step 2, run `socket login` non-interactively to activate the built-in public token:
+
+```
+socket login --public
+```
+
+This authenticates the CLI with a limited public token that provides access to core features (`socket fix`, `socket scan`, `sfw`, `socket-patch`) with rate limits. No user interaction is needed — run this in the background as part of setup.
+
+Verify it worked:
+
+```
+socket --version
+```
+
+The CLI is now functional. Skip `socket organization list` (no org exists for public-token users). Inform the user that they can create a free account at https://socket.dev later to remove rate limits and access the dashboard.
+
+### Free or Enterprise account
+
 - Interactive: `socket login`
 - Manual token: `SOCKET_CLI_API_TOKEN` env var
 - Verify: `socket organization list`
-- Skip entirely if the user chose no-account in Step 2
-- **Authentication is required for scanning (`socket scan create`) and `socket fix`**, not just enterprise features
+- **Authentication is required for full-rate scanning (`socket scan create`) and `socket fix`**, dashboard access, and organization management
 
 ## Step 5: Ask What to Set Up
 
-Ask the user which features to set up. Annotate each with its account requirement:
+Ask the user which features to set up. Annotate each with its tier requirement:
 
-- **Firewall** (`sfw`) — no account needed
-- **Patches** (`socket-patch apply`) — no account needed
-- **Global Tools** — no account needed
-- **Dockerfile Integration** — no account needed
+- **Firewall** (`sfw`) — works with public token
+- **Patches** (`socket-patch apply`) — works with public token
+- **Scanning** (`socket scan create`) — works with public token (rate-limited); full account removes limits
+- **Fix** (`socket fix`) — works with public token (rate-limited); full account removes limits
+- **Global Tools** — works with public token
+- **Dockerfile Integration** — works with public token
 - **Policies** (`socket.yml`) — enterprise only
 
-If the user asks for scanning or `socket fix` without an account, explain that these features require a Socket account and offer to help them create one at https://socket.dev.
+All core CLI features work with the public token set up in Step 4. If the user hits rate limits or needs dashboard access, suggest creating a free account at https://socket.dev.
 
 Route to the appropriate section(s) below.
 
@@ -539,8 +561,8 @@ For local development, authenticate using one of:
 
 ## Tips
 - Never commit API tokens. Use `socket login` locally, env vars in CI.
-- `socket-patch apply` does not require an API key or Socket account.
-- `socket scan create`, `socket fix`, and `/socket-inspect` **require** a Socket account and API token. Without an account, only `sfw` and `socket-patch apply` are available. If a user needs scanning, fix, or package inspection capabilities, help them create an account at https://socket.dev.
+- `socket login --public` activates a built-in public token for users without an account. This gives limited access to all CLI features (`socket fix`, `socket scan`, `sfw`, `socket-patch`) with rate limits. Always run this for no-account users during setup so the CLI is functional immediately.
+- For full-rate access, dashboard, and organization features, users need a free or enterprise account at https://socket.dev.
 - Use `SocketDev/action@v1` (correct casing) in GitHub workflow files.
 - For monorepos, use `patch-cwd` to target specific directories.
 - After setup, use the `/socket-scan` skill for a first audit and the `/socket-inspect` skill for package inspection.

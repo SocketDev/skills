@@ -74,15 +74,13 @@ interface CategoryDef {
 const CATEGORIES: [string, CategoryDef][] = [
   ["setup", { label: "Setup", description: "Install, authenticate, and configure Socket for your project." }],
   ["analysis", { label: "Analysis", description: "Scan dependencies and inspect individual packages for security risks." }],
-  ["dep", { label: "Dependency Management", description: "Upgrade, patch, and clean up individual dependencies." }],
-  ["fix", { label: "Fix", description: "Holistic dependency repair — orchestrate cleanup, patching, and upgrades in a single phased workflow." }],
+  ["fix", { label: "Fix", description: "Holistic dependency repair — orchestrate cleanup, replacement, patching, and upgrades in a single phased workflow with individual subskills for each operation." }],
 ];
 
 function getCategory(skillName: string): string {
   if (skillName === "socket-setup") return "setup";
   if (skillName === "socket-scan" || skillName === "socket-inspect") return "analysis";
-  if (skillName.startsWith("socket-dep-")) return "dep";
-  if (skillName === "socket-fix") return "fix";
+  if (skillName.startsWith("socket-dep-") || skillName === "socket-fix") return "fix";
   return "setup";
 }
 

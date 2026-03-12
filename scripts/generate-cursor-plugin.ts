@@ -23,8 +23,8 @@ function loadJson(filePath: string): Record<string, unknown> {
   return JSON.parse(fs.readFileSync(filePath, "utf-8"));
 }
 
-function collectSkillNames(): string[] {
-  const skillsDir = path.join(ROOT, "skills");
+function collectSkillNames(dir?: string): string[] {
+  const skillsDir = dir ?? path.join(ROOT, "skills");
   if (!fs.existsSync(skillsDir)) return [];
 
   const names: string[] = [];
@@ -38,6 +38,9 @@ function collectSkillNames(): string[] {
     const meta = parseFrontmatter(fs.readFileSync(skillMd, "utf-8"));
     const name = meta.name?.trim();
     if (name) names.push(name);
+
+    // Recurse into subdirectories to discover subskills
+    names.push(...collectSkillNames(path.join(skillsDir, entry.name)));
   }
 
   return names;
