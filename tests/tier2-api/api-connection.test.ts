@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 
 const API_KEY = process.env.SOCKET_SECURITY_API_KEY;
-const BATCH_PURL_URL = "https://api.socket.dev/v0/purl";
+const ORG = process.env.SOCKET_ORG || "SocketDemo";
+const BATCH_PURL_URL = `https://api.socket.dev/v0/orgs/${ORG}/purl`;
 
 describe("Batch PURL API Connection", () => {
   it("successfully connects and returns data", async () => {

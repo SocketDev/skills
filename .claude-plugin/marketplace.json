@@ -12,7 +12,7 @@
       "name": "socket-scan",
       "source": "./skills/socket-scan",
       "skills": "./",
-      "description": "Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, performs Tier 1 reachability analysis for enterprise customers, and provides license compliance auditing with SBOM generation."
+      "description": "Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, performs Tier 1 reachability analysis for enterprise customers, and provides license compliance auditing."
     },
     {
       "name": "socket-inspect",
@@ -55,6 +55,12 @@
       "source": "./skills/socket-fix",
       "skills": "./",
       "description": "Fix dependency security issues — either scan and fix everything (requires /socket-scan), or target a single named package. Orchestrates /socket-dep-cleanup, /socket-dep-replace, /socket-dep-patch, and /socket-dep-upgrade as subskills."
+    },
+    {
+      "name": "socket-scan-setup",
+      "source": "./skills/socket-scan/socket-scan-setup",
+      "skills": "./",
+      "description": "Set up prerequisites for Socket scanning — install the CLI, configure auth with the public demo token, and verify scan access."
     }
   ]
 }

@@ -12,6 +12,7 @@ const EXPECTED_TOP_LEVEL = ["socket-fix", "socket-inspect", "socket-scan", "sock
 /** Subskills expected under skills/socket-fix/ */
 const EXPECTED_SUBSKILLS: Record<string, string[]> = {
   "socket-fix": ["socket-dep-cleanup", "socket-dep-patch", "socket-dep-replace", "socket-dep-upgrade"],
+  "socket-scan": ["socket-scan-setup"],
 };
 
 /** All expected skill names (top-level + subskills) */

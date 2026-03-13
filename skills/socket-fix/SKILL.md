@@ -46,33 +46,36 @@ Scan the project with `/socket-scan`, then systematically resolve findings using
 <!-- BEGIN_SECTION:cli-setup.md -->
 ### Socket CLI Setup
 
-The Socket CLI must be installed. Verify:
+Use `npx socket` to run the Socket CLI — this always fetches the latest version and requires no global install. Verify it works:
 
 ```
-socket --version
+npx socket --version
 ```
 
-If not installed, install globally:
+All commands in this skill use the `npx socket` prefix (e.g., `npx socket scan create ...`).
 
-```
-npm install -g socket
-```
-
-If `socket` is not installed globally, `npx socket` works as a drop-in prefix for all commands in this skill (e.g., `npx socket scan create ...`).
+**Optional global install:** If you prefer a global `socket` command, install with `npm install -g socket@latest` (must be version **1.0.0 or higher**).
 
 #### Authentication
 
-**For users without a Socket account:** Run `socket login --public` to activate a built-in public token. This provides limited access to all CLI features (`socket fix`, `socket scan`, `sfw`, `socket-patch`) with rate limits. No account creation is needed for basic usage.
+**For users without a Socket account:** Configure the public demo token directly:
+
+```
+npx socket config set apiToken sktsec_t_--RAN5U4ivauy4w37-6aoKyYPDt5ZbaT5JBVMqiwKo_api --no-banner --no-spinner
+npx socket config set defaultOrg SocketDemo --no-banner --no-spinner
+```
+
+This provides limited access to CLI features like `npx socket fix`, `npx socket package score`, `sfw`, and `socket-patch` with rate limits. No account creation is needed for basic usage. **Note:** The public demo token cannot create scans (`npx socket scan create` requires the `full-scans:create` permission). For scanning and full-rate access, create a free account at https://socket.dev.
 
 **For users with an account:** Authenticate with one of:
 
-- **Interactive login**: `socket login` (stores credentials in `~/.socket/`)
+- **Interactive login**: `npx socket login` (stores credentials in `~/.socket/`)
 - **Environment variable**: Set `SOCKET_CLI_API_TOKEN` in your shell profile or CI environment
 
 Verify account authentication:
 
 ```
-socket organization list
+npx socket organization list
 ```
 
 If authentication fails or the CLI is not installed, use the `/socket-setup` skill for detailed guidance including Node.js installation, PATH troubleshooting, and CI/CD token configuration.
@@ -85,7 +88,7 @@ If authentication fails or the CLI is not installed, use the `/socket-setup` ski
 Run `/socket-scan` to get a full picture of the project's dependency health. Use `--tmp` for a temporary read-only scan (the default — does not persist to the dashboard):
 
 ```
-socket scan create --repo . --tmp --json
+socket scan create . --tmp --json
 ```
 
 Parse the scan results to build a prioritized list of issues:
@@ -359,7 +362,7 @@ After the subskill completes:
 ## Error Handling
 
 - **`/socket-scan` not working (Fix All mode)**: Do not proceed with Fix All. Offer to run `/socket-setup` first, or suggest Fix Package mode as an alternative.
-- **Socket CLI not installed**: Run `/socket-setup` to install and authenticate. For users without an account, `/socket-setup` will run `socket login --public` to activate the built-in public token, which provides limited access to all CLI features.
+- **Socket CLI not installed**: Run `/socket-setup` to install and authenticate. For users without an account, `/socket-setup` will configure the public demo token, which provides limited access to CLI features like `socket fix` and `socket package score` (but not `socket scan create`).
 - **Rate limits hit**: The public token has rate limits. If the user hits them, suggest creating a free account at https://socket.dev to remove limits.
 - **No dependencies found**: The project may not have manifest files in the expected locations. Check for monorepo structures or non-standard layouts.
 - **Build/test command unknown**: Ask the user for the correct build and test commands before starting repair.

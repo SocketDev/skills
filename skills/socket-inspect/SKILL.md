@@ -22,33 +22,36 @@ Research a package before you depend on it. This skill pulls every available sig
 <!-- BEGIN_SECTION:cli-setup.md -->
 ### Socket CLI Setup
 
-The Socket CLI must be installed. Verify:
+Use `npx socket` to run the Socket CLI — this always fetches the latest version and requires no global install. Verify it works:
 
 ```
-socket --version
+npx socket --version
 ```
 
-If not installed, install globally:
+All commands in this skill use the `npx socket` prefix (e.g., `npx socket scan create ...`).
 
-```
-npm install -g socket
-```
-
-If `socket` is not installed globally, `npx socket` works as a drop-in prefix for all commands in this skill (e.g., `npx socket scan create ...`).
+**Optional global install:** If you prefer a global `socket` command, install with `npm install -g socket@latest` (must be version **1.0.0 or higher**).
 
 #### Authentication
 
-**For users without a Socket account:** Run `socket login --public` to activate a built-in public token. This provides limited access to all CLI features (`socket fix`, `socket scan`, `sfw`, `socket-patch`) with rate limits. No account creation is needed for basic usage.
+**For users without a Socket account:** Configure the public demo token directly:
+
+```
+npx socket config set apiToken sktsec_t_--RAN5U4ivauy4w37-6aoKyYPDt5ZbaT5JBVMqiwKo_api --no-banner --no-spinner
+npx socket config set defaultOrg SocketDemo --no-banner --no-spinner
+```
+
+This provides limited access to CLI features like `npx socket fix`, `npx socket package score`, `sfw`, and `socket-patch` with rate limits. No account creation is needed for basic usage. **Note:** The public demo token cannot create scans (`npx socket scan create` requires the `full-scans:create` permission). For scanning and full-rate access, create a free account at https://socket.dev.
 
 **For users with an account:** Authenticate with one of:
 
-- **Interactive login**: `socket login` (stores credentials in `~/.socket/`)
+- **Interactive login**: `npx socket login` (stores credentials in `~/.socket/`)
 - **Environment variable**: Set `SOCKET_CLI_API_TOKEN` in your shell profile or CI environment
 
 Verify account authentication:
 
 ```
-socket organization list
+npx socket organization list
 ```
 
 If authentication fails or the CLI is not installed, use the `/socket-setup` skill for detailed guidance including Node.js installation, PATH troubleshooting, and CI/CD token configuration.
@@ -65,22 +68,26 @@ Query the Socket Batch PURL REST API with the package's PURL (Package URL) to re
 **API call:**
 
 ```
-curl -X POST https://api.socket.dev/v0/purl \
+curl -X POST https://api.socket.dev/v0/orgs/{org_slug}/purl \
   -H "Authorization: Bearer $SOCKET_SECURITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"purls": ["pkg:<ecosystem>/<name>@<version>"]}'
 ```
 
+**Note:** This endpoint requires org access and a `SOCKET_SECURITY_API_KEY`. The old `/v0/purl` endpoint is deprecated (returns empty results since Jan 2026).
+
+**Warning:** The Batch PURL API may be intermittently unavailable (returns 401 or empty responses). If the API call fails, use the CLI fallback in Step 1b below.
+
 For example, to inspect `lodash@4.17.21` on npm:
 
 ```
-curl -X POST https://api.socket.dev/v0/purl \
+curl -X POST https://api.socket.dev/v0/orgs/{org_slug}/purl \
   -H "Authorization: Bearer $SOCKET_SECURITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"purls": ["pkg:npm/lodash@4.17.21"]}'
 ```
 
-If `SOCKET_SECURITY_API_KEY` is not set, authentication is required before proceeding. Run `socket login` or set the `SOCKET_SECURITY_API_KEY` environment variable. Use the `/socket-setup` skill for guidance.
+If `SOCKET_SECURITY_API_KEY` is not set, authentication is required before proceeding. Run `npx socket login` or set the `SOCKET_SECURITY_API_KEY` environment variable. Use the `/socket-setup` skill for guidance.
 
 Extract **all** returned data:
 - Overall score and category scores (security, quality, maintenance, license)
@@ -89,6 +96,16 @@ Extract **all** returned data:
 - Dependency counts (direct and transitive)
 - Maintainer and author information
 - License identifier
+
+## Step 1b — CLI Fallback
+
+If the Batch PURL API is unavailable or returns an error, fall back to the CLI:
+
+```
+npx socket package score <ecosystem> <name> <version>
+```
+
+This returns score data without requiring `SOCKET_SECURITY_API_KEY`.
 
 ## Step 2 — Check the socket.dev Package Page
 
@@ -182,7 +199,7 @@ Research alternatives when any of the following conditions are met:
 To research alternatives:
 1. Identify the package's core functionality
 2. Search for well-known alternatives providing similar functionality
-3. Query the Socket Batch PURL API for the top 3-5 alternatives
+3. Query the Socket Batch PURL API for the top 3-5 alternatives (or use `npx socket package score` CLI fallback)
 4. Present a comparison table:
 
 | Package | Socket Score | Vulnerabilities | Dependencies | Last Published |
@@ -247,7 +264,7 @@ A clear, actionable recommendation: safe to use, use with caution (with reasons)
 
 ## Error Handling
 
-- **Batch PURL API returns no data**: The package may not exist in the specified ecosystem, or the package name may be misspelled. Verify the exact package name and ecosystem. For scoped npm packages, include the full scope (e.g., `@babel/core`). If `SOCKET_SECURITY_API_KEY` is not set, run `/socket-setup` to configure authentication. For users without an account, `socket login --public` provides limited CLI access but the Batch PURL API requires `SOCKET_SECURITY_API_KEY` from a free or enterprise account.
+- **Batch PURL API returns no data**: The package may not exist in the specified ecosystem, or the package name may be misspelled. Verify the exact package name and ecosystem. For scoped npm packages, include the full scope (e.g., `@babel/core`). If `SOCKET_SECURITY_API_KEY` is not set, use the `/socket-setup` skill to configure authentication. For users without an account, the public demo token provides limited CLI access but the Batch PURL API requires `SOCKET_SECURITY_API_KEY` from a free or enterprise account. As a fallback, use `npx socket package score <ecosystem> <name> <version>` for basic score data.
 - **WebFetch fails on socket.dev page**: Fall back to API data only. Note in the report that the review is based on API data and include the socket.dev URL for the user to check manually.
 - **Package not found in Socket's database**: Socket may not index all packages in all ecosystems. Note this limitation and suggest checking the package's own repository and issue tracker directly.
 - **GitHub API rate limit**: If GitHub API calls for maintenance data are rate-limited, skip the maintenance health dimension and note it in the report.
@@ -261,5 +278,5 @@ A clear, actionable recommendation: safe to use, use with caution (with reasons)
 - Use inspect results to inform decisions with the `/socket-dep-upgrade`, `/socket-dep-patch`, and `/socket-scan` skills
 - Weigh Socket score and maintenance health over download count alone
 - Re-review periodically — a package's security posture changes over time
-- CLI-based inspection works with the public token (`socket login --public`) for users without an account, subject to rate limits. The Batch PURL API requires `SOCKET_SECURITY_API_KEY` from a free or enterprise account.
+- CLI-based inspection works with the public token (use `/socket-setup` to configure) for users without an account, subject to rate limits. The Batch PURL API requires `SOCKET_SECURITY_API_KEY` from a free or enterprise account.
 - Prefer Socket patches over manual version pinning when available

@@ -12,7 +12,8 @@ You have additional SKILLs documented in directories containing a "SKILL.md" fil
 | socket-dep-upgrade | Use socket fix to find and update vulnerable dependencies, then fix any breaking changes in the codebase. Security-audited upgrades with automated code migration. |
 | socket-fix | Fix dependency security issues — either scan and fix everything (requires /socket-scan), or target a single named package. Orchestrates /socket-dep-cleanup, /socket-dep-replace, /socket-dep-patch, and /socket-dep-upgrade as subskills. |
 | socket-inspect | Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches. |
-| socket-scan | Run a dependency scan using the Socket CLI. Defaults to a temporary read-only scan (--tmp) that returns results without persisting to the dashboard. Creates a persistent dashboard scan only when the user is authenticated with a full account. Includes reachability analysis for enterprise customers and license compliance auditing with SBOM generation. |
+| socket-scan | Run a dependency scan using the Socket CLI. Prompts unauthenticated users to log in or create a free account. If the user skips login, falls back to cdxgen with greatly reduced alert accuracy and poor SBOM accuracy. Authenticated users get temporary read-only scans by default (--tmp). Creates a persistent dashboard scan only when explicitly requested. Includes reachability analysis for enterprise customers and license compliance auditing. |
+| socket-scan-setup | Set up prerequisites for Socket scanning — install the CLI, configure auth with the public demo token, and verify scan access. Use this before the first scan or when encountering auth errors. |
 | socket-setup | Set up Socket — prompt for API key, install the CLI, authenticate, configure policies and tokens, set up CI/CD for firewall or patch modes across GitHub, GitLab, Bitbucket, and other systems. |
 
 ## Usage
@@ -33,4 +34,5 @@ The skills are located in:
 - `skills/socket-fix/SKILL.md`
 - `skills/socket-inspect/SKILL.md`
 - `skills/socket-scan/SKILL.md`
+- `skills/socket-scan/socket-scan-setup/SKILL.md`
 - `skills/socket-setup/SKILL.md`

@@ -76,13 +76,14 @@ Store the tier choice for subsequent steps.
 
 ### No account (public token)
 
-If the user chose no-account in Step 2, run `socket login` non-interactively to activate the built-in public token:
+If the user chose no-account in Step 2, configure the public demo token directly:
 
 ```
-socket login --public
+npx socket config set apiToken sktsec_t_--RAN5U4ivauy4w37-6aoKyYPDt5ZbaT5JBVMqiwKo_api --no-banner --no-spinner
+npx socket config set defaultOrg SocketDemo --no-banner --no-spinner
 ```
 
-This authenticates the CLI with a limited public token that provides access to core features (`socket fix`, `socket scan`, `sfw`, `socket-patch`) with rate limits. No user interaction is needed — run this in the background as part of setup.
+This configures the CLI with a limited public token that provides access to features like `socket fix`, `socket package score`, `sfw`, and `socket-patch` with rate limits. No user interaction is needed — run this in the background as part of setup. **Note:** The demo token cannot create scans (`socket scan create` requires a free account).
 
 Verify it worked:
 
@@ -90,7 +91,7 @@ Verify it worked:
 socket --version
 ```
 
-The CLI is now functional. Skip `socket organization list` (no org exists for public-token users). Inform the user that they can create a free account at https://socket.dev later to remove rate limits and access the dashboard.
+The CLI is now functional. Skip `socket organization list` (no org exists for public-token users). Inform the user that they can create a free account at https://socket.dev later to remove rate limits, enable scanning, and access the dashboard.
 
 ### Free or Enterprise account
 
@@ -561,7 +562,7 @@ For local development, authenticate using one of:
 
 ## Tips
 - Never commit API tokens. Use `socket login` locally, env vars in CI.
-- `socket login --public` activates a built-in public token for users without an account. This gives limited access to all CLI features (`socket fix`, `socket scan`, `sfw`, `socket-patch`) with rate limits. Always run this for no-account users during setup so the CLI is functional immediately.
+- For users without an account, configure the public demo token with `npx socket config set apiToken sktsec_t_--RAN5U4ivauy4w37-6aoKyYPDt5ZbaT5JBVMqiwKo_api` and `npx socket config set defaultOrg SocketDemo`. This gives limited access to CLI features like `socket fix`, `socket package score`, `sfw`, and `socket-patch` with rate limits. The demo token cannot create scans — `socket scan create` requires a free account at https://socket.dev. Always configure the demo token for no-account users during setup so the CLI is functional immediately.
 - For full-rate access, dashboard, and organization features, users need a free or enterprise account at https://socket.dev.
 - Use `SocketDev/action@v1` (correct casing) in GitHub workflow files.
 - For monorepos, use `patch-cwd` to target specific directories.

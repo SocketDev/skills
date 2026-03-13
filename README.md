@@ -139,6 +139,7 @@ Install, authenticate, and configure Socket for your project.
 
 | Name | Description | Documentation |
 |------|-------------|---------------|
+| `socket-scan-setup` | Set up prerequisites for Socket scanning — install the CLI, configure auth with the public demo token, and verify scan access. | [SKILL.md](skills/socket-scan/socket-scan-setup/SKILL.md) |
 | `socket-setup` | Set up Socket — prompt for API key, install the CLI, authenticate, configure policies and tokens, set up CI/CD for firewall or patch modes across GitHub, GitLab, Bitbucket, and other systems. | [SKILL.md](skills/socket-setup/SKILL.md) |
 
 #### Analysis
@@ -148,7 +149,7 @@ Scan dependencies and inspect individual packages for security risks.
 | Name | Description | Documentation |
 |------|-------------|---------------|
 | `socket-inspect` | Research a package before you depend on it — pull every signal from Socket (scores, alerts, malware verdicts, CVEs, supply-chain risk), check the socket.dev package page, evaluate alternatives, and surface available Socket patches. | [SKILL.md](skills/socket-inspect/SKILL.md) |
-| `socket-scan` | Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, performs Tier 1 reachability analysis for enterprise customers, and provides license compliance auditing with SBOM generation. | [SKILL.md](skills/socket-scan/SKILL.md) |
+| `socket-scan` | Run a full dependency scan using the Socket CLI. Creates a scan in the Socket dashboard, checks all dependencies for vulnerabilities and supply-chain risks, performs Tier 1 reachability analysis for enterprise customers, and provides license compliance auditing. | [SKILL.md](skills/socket-scan/SKILL.md) |
 
 #### Fix
 

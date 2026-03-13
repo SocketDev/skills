@@ -1,15 +1,18 @@
 ---
 name: socket-scan
-description: Run a dependency scan using the Socket CLI. Defaults to a temporary read-only
-  scan (--tmp) that returns results without persisting to the dashboard. Creates a
-  persistent dashboard scan only when the user is authenticated with a full account.
-  Includes reachability analysis for enterprise customers and license compliance auditing
-  with SBOM generation.
+description: Run a dependency scan using the Socket CLI. Prompts unauthenticated users
+  to log in or create a free account. If the user skips login, falls back to cdxgen
+  with greatly reduced alert accuracy and poor SBOM accuracy. Authenticated users
+  get temporary read-only scans by default (--tmp). Creates a persistent dashboard
+  scan only when explicitly requested. Includes reachability analysis for enterprise
+  customers and license compliance auditing.
 ---
 
 # Research Scan
 
-Run a dependency scan using the Socket CLI. By default, scans run in **temporary read-only mode** (`--tmp`) — results are returned locally without creating a persistent entry in the Socket dashboard. This is safe for public-token users and avoids cluttering the dashboard during development.
+Run a dependency scan using the Socket CLI. For authenticated users, scans run in **temporary read-only mode** (`--tmp`) by default — results are returned locally without creating a persistent entry in the Socket dashboard.
+
+For unauthenticated users (no token or demo token only), the skill **prompts the user to log in or create a free account**. If the user skips login, the scan falls back to cdxgen — but alert accuracy will be greatly reduced and SBOM accuracy will be poor.
 
 When the user is authenticated with a full account (free or enterprise) and explicitly wants results saved, the scan can be promoted to a **persistent dashboard scan**.
 
@@ -21,7 +24,7 @@ When the user is authenticated with a full account (free or enterprise) and expl
 - The user is adding or updating dependencies and wants to verify security posture
 - The user asks for a full security audit of their dependency tree
 - The user wants to check for malware in their dependencies
-- The user needs an SBOM (Software Bill of Materials) for compliance
+- The user needs to construct an SBOM from scan data for compliance
 - The user wants to audit licenses across all dependencies
 - The user needs to check for GPL, SSPL, or other restrictive licenses in a commercial project
 - The user wants a compliance report for a security review or procurement process
@@ -32,33 +35,36 @@ When the user is authenticated with a full account (free or enterprise) and expl
 <!-- BEGIN_SECTION:cli-setup.md -->
 ### Socket CLI Setup
 
-The Socket CLI must be installed. Verify:
+Use `npx socket` to run the Socket CLI — this always fetches the latest version and requires no global install. Verify it works:
 
 ```
-socket --version
+npx socket --version
 ```
 
-If not installed, install globally:
+All commands in this skill use the `npx socket` prefix (e.g., `npx socket scan create ...`).
 
-```
-npm install -g socket
-```
-
-If `socket` is not installed globally, `npx socket` works as a drop-in prefix for all commands in this skill (e.g., `npx socket scan create ...`).
+**Optional global install:** If you prefer a global `socket` command, install with `npm install -g socket@latest` (must be version **1.0.0 or higher**).
 
 #### Authentication
 
-**For users without a Socket account:** Run `socket login --public` to activate a built-in public token. This provides limited access to all CLI features (`socket fix`, `socket scan`, `sfw`, `socket-patch`) with rate limits. No account creation is needed for basic usage.
+**For users without a Socket account:** Configure the public demo token directly:
+
+```
+npx socket config set apiToken sktsec_t_--RAN5U4ivauy4w37-6aoKyYPDt5ZbaT5JBVMqiwKo_api --no-banner --no-spinner
+npx socket config set defaultOrg SocketDemo --no-banner --no-spinner
+```
+
+This provides limited access to CLI features like `npx socket fix`, `npx socket package score`, `sfw`, and `socket-patch` with rate limits. No account creation is needed for basic usage. **Note:** The public demo token cannot create scans (`npx socket scan create` requires the `full-scans:create` permission). For scanning and full-rate access, create a free account at https://socket.dev.
 
 **For users with an account:** Authenticate with one of:
 
-- **Interactive login**: `socket login` (stores credentials in `~/.socket/`)
+- **Interactive login**: `npx socket login` (stores credentials in `~/.socket/`)
 - **Environment variable**: Set `SOCKET_CLI_API_TOKEN` in your shell profile or CI environment
 
 Verify account authentication:
 
 ```
-socket organization list
+npx socket organization list
 ```
 
 If authentication fails or the CLI is not installed, use the `/socket-setup` skill for detailed guidance including Node.js installation, PATH troubleshooting, and CI/CD token configuration.
@@ -66,38 +72,87 @@ If authentication fails or the CLI is not installed, use the `/socket-setup` ski
 
 For enterprise features (reachability analysis), an enterprise subscription is required in addition to authentication.
 
+If setup fails or this is a first-time scan, use the `/socket-scan-setup` subskill for guided setup including auto-configuration of the public demo token.
+
+## Quick Start
+
+First, check whether the user has a Socket account:
+
+```
+npx socket organization list --json --no-banner --no-spinner
+```
+
+**If the user has a real organization** (not `SocketDemo` or empty):
+
+```
+npx socket scan create . --tmp --json --no-banner --no-spinner
+```
+
+**If the user has no token, the demo token, or is in the `SocketDemo` org**, prompt them to log in or create an account:
+
+> You're not currently logged in to Socket. To scan your project, **log in with `npx socket login`** or **create a free account at https://socket.dev**.
+>
+> Would you like to log in now?
+
+**If the user logs in**, re-run `npx socket organization list` and proceed with the authenticated scan above.
+
+**If the user skips login**, fall back to cdxgen. Warn them before proceeding:
+
+> I'll run a scan using cdxgen as a fallback. **Please note:** without a Socket account, alert accuracy will be greatly reduced and SBOM accuracy will be poor. You will not get malware detection, supply-chain risk analysis, or Socket scores.
+
+```
+npx @cyclonedx/cdxgen -o bom.json -p
+```
+
 ## Scan Workflow
 
-### 1. Determine Scan Mode
+### 1. Determine Scan Tier
 
-Before scanning, determine whether to use temporary or persistent mode:
+Before scanning, check the auth state to determine the user's tier:
 
-1. **Check authentication level** — run `socket organization list` to see if the user has a full account with org access
-2. **If it fails or returns empty** — the user is on the public token. Use **temporary mode** (default).
-3. **If it succeeds** — the user has a full account. Ask whether they want results saved to the dashboard:
-   - If yes (or if they explicitly asked to "create a scan") → **persistent mode**
-   - If no, or if the scan is for development/exploration purposes → **temporary mode** (default)
+```
+npx socket organization list --json --no-banner --no-spinner
+```
+
+Use the result to decide the scan approach:
+
+1. **No organizations returned, or the only org is `SocketDemo`** — the user has no account or only the demo token. **Prompt the user to log in or create an account**:
+
+   > You're not currently logged in to Socket. To scan your project, **log in with `npx socket login`** or **create a free account at https://socket.dev**.
+   >
+   > Would you like to log in now?
+
+   **If the user logs in**, re-run `npx socket organization list` to confirm, then proceed with Step 2a.
+
+   **If the user skips login**, proceed to Step 2b (cdxgen fallback). Warn them that alert accuracy will be greatly reduced and SBOM accuracy will be poor.
+
+2. **One or more real organizations returned** — the user has a full account. Decide on scan mode:
+   - Ask whether they want results saved to the dashboard:
+     - If yes (or if they explicitly asked to "create a scan") → **persistent mode**
+     - If no, or if the scan is for development/exploration purposes → **temporary mode** (default)
 
 **Default to temporary mode.** Only use persistent mode when the user has a full account AND wants results saved.
 
-### 2. Run the Scan
+### 2a. Run the Scan (Authenticated Users)
+
+**Skip to Step 2b if the user has no account or only the demo token.**
 
 #### Temporary mode (default)
 
 Run a read-only scan that returns results locally without persisting to the Socket dashboard:
 
 ```
-socket scan create --repo . --tmp --json
+npx socket scan create . --tmp --json --no-banner --no-spinner
 ```
 
-This is the default for all users. It works with the public token, does not create a dashboard entry, and is safe to run repeatedly during development.
+This is the default for authenticated users. It does not create a dashboard entry and is safe to run repeatedly during development.
 
 #### Persistent mode (authenticated users only)
 
 Run a full scan that creates a persistent entry in the Socket dashboard:
 
 ```
-socket scan create --repo . --json
+npx socket scan create . --json --no-banner --no-spinner
 ```
 
 The scan is uploaded to the Socket dashboard where results can be viewed, shared, and tracked over time.
@@ -105,56 +160,132 @@ The scan is uploaded to the Socket dashboard where results can be viewed, shared
 **For enterprise customers**, specify the organization to associate the scan:
 
 ```
-socket scan create --repo . --org <org-slug> --json
+npx socket scan create . --org <org-slug> --json --no-banner --no-spinner
 ```
 
 **Flags:**
 
 | Flag | Purpose |
 |---|---|
-| `--repo <path>` | Path to the repository to scan (use `.` for current directory) |
+| `TARGET` | Positional arg — path to directory or manifest files to scan (default: `.`) |
+| `--repo <name>` | Repository name for dashboard metadata (not the scan target) |
 | `--tmp` | Temporary read-only scan — results returned locally, not persisted to dashboard (default) |
 | `--org <org-slug>` | Organization slug for enterprise scans (persistent mode only) |
 | `--json` | Output results as JSON for easier parsing |
+| `--no-banner` | Suppress CLI banner output |
+| `--no-spinner` | Suppress spinner animations |
+| `--no-interactive` | Disable interactive prompts |
 | `--branch <name>` | Associate the scan with a specific branch (persistent mode only) |
 | `--commit <sha>` | Associate the scan with a specific commit (persistent mode only) |
 
+### 2b. cdxgen Fallback (User Skipped Login)
+
+**Only use this path if the user was prompted to log in (Step 1) and chose to skip.** Before running cdxgen, display this warning:
+
+> **Warning:** Without a Socket account, alert accuracy will be greatly reduced and SBOM accuracy will be poor. You will not get malware detection, supply-chain risk analysis, Socket scores, or reachability analysis. To get accurate results, run `npx socket login` or create a free account at https://socket.dev.
+
+Generate an SBOM with cdxgen:
+
+```
+npx @cyclonedx/cdxgen -o bom.json -p
+```
+
+cdxgen auto-detects the project type (npm, pip, Go, Maven, etc.) and produces a CycloneDX SBOM with dependency and known-vulnerability data.
+
+**cdxgen flags:**
+
+| Flag | Purpose |
+|---|---|
+| `-o <file>` | Output file path (default: `bom.json`) |
+| `-p` | Print the SBOM to stdout as well as writing to file |
+| `-t <type>` | Force project type (`npm`, `pip`, `go`, `maven`, `gradle`, etc.) — auto-detected if omitted |
+| `--no-recurse` | Do not scan subdirectories (useful for monorepos to target a specific package) |
+| `--spec-version 1.5` | Use CycloneDX spec version 1.5 (default) |
+
+#### Interpreting cdxgen output
+
+The `bom.json` file is a CycloneDX SBOM. Extract dependency and vulnerability information from:
+
+- **`components[]`** — list of all dependencies with name, version, purl, and license info
+- **`vulnerabilities[]`** (if present) — known CVEs with severity, description, and affected version ranges
+- **`dependencies[]`** — dependency graph (which component depends on which)
+
+**Limitations of cdxgen fallback (alert accuracy greatly reduced, SBOM accuracy poor):**
+- No malware detection, typosquatting detection, or install script analysis
+- No Socket scores (security, quality, maintenance, license)
+- No reachability analysis
+- Vulnerability data comes from public advisory databases (OSV, NVD) — significantly less complete than Socket's curated data, expect many false negatives
+- SBOM component resolution is less accurate — transitive dependencies and version pinning may be incomplete or incorrect
+- No dashboard integration or historical tracking
+
+For license auditing from cdxgen output, parse the `components[].licenses[]` field in `bom.json` instead of relying on Socket's license analysis.
+
 ### 3. Interpret Results
 
-When using `--json`, the output is a JSON object with these top-level keys:
+When using `--json`, the raw output may include non-JSON prefix lines (banners, spinners, ANSI escape codes). Always use `--no-banner --no-spinner` flags, or use the helper script which strips noise automatically. If parsing manually, filter for lines starting with `{` or `[`.
+
+The JSON output is an object with an `issues[]` array:
 
 ```json
 {
   "id": "scan-id-string",
   "url": "https://socket.dev/dashboard/org/.../scan/...",
-  "packages": [
+  "issues": [
     {
-      "name": "lodash",
-      "version": "4.17.20",
-      "ecosystem": "npm",
-      "score": { "overall": 85, "security": 90, "quality": 80, "maintenance": 75, "license": 95 },
-      "alerts": [ { "type": "criticalCVE", "severity": "critical", "title": "...", "description": "..." } ],
-      "vulnerabilities": [ { "id": "GHSA-...", "severity": "high", "fixedIn": "4.17.21" } ]
+      "type": "criticalCVE",
+      "value": {
+        "severity": "critical",
+        "title": "...",
+        "description": "...",
+        "package": "lodash",
+        "version": "4.17.20"
+      }
     }
-  ],
-  "summary": { "total": 150, "critical": 1, "high": 3, "medium": 12, "low": 25, "malware": 0 }
+  ]
 }
 ```
 
-Use these keys to programmatically filter and prioritize findings.
+**Note:** The exact schema may vary by CLI version. Always inspect actual `--json` output for the complete structure.
 
-Triage alerts by severity:
+#### Issue Type Taxonomy
 
-- **Critical / High severity**: Stop and report these to the user immediately. These represent known vulnerabilities with available exploits or severe supply-chain risks that require urgent attention.
-- **Malware**: If any package is flagged as malware, display a prominent warning. Malware findings should be treated as the highest priority — advise the user to remove the package immediately.
-- **Medium / Low severity**: Summarize these for the user. Group by category (vulnerability, quality, maintenance, license) and provide a brief overview rather than listing each one individually.
+| Type | Severity | Meaning |
+|------|----------|---------|
+| `criticalCVE` | critical | Critical-severity CVE |
+| `cve` | high | High-severity CVE |
+| `mediumCVE` | medium | Medium-severity CVE |
+| `mildCVE` | low | Low-severity CVE |
+| `licenseSpdxDisj` | varies | License mismatch or non-standard SPDX |
+| `mixedLicense` | varies | Multiple conflicting licenses |
+| `malware` | critical | Known malware detected |
+
+Use the `type` field and `value.severity` to programmatically filter and prioritize findings.
+
+Triage issues by severity:
+
+- **Critical / High severity** (`criticalCVE`, `cve`): Stop and report these to the user immediately. These represent known vulnerabilities with available exploits or severe supply-chain risks that require urgent attention.
+- **Malware** (`malware`): If any issue has type `malware`, display a prominent warning. Malware findings should be treated as the highest priority — advise the user to remove the package immediately.
+- **Medium / Low severity** (`mediumCVE`, `mildCVE`): Summarize these for the user. Group by type and provide a brief overview rather than listing each one individually.
+- **License issues** (`licenseSpdxDisj`, `mixedLicense`): Flag for the license audit step (Section 6).
+
+### Additional Native Audit Tools
+
+In addition to cdxgen (Step 2b), native package manager audit tools can supplement findings:
+
+- **npm:** `npm audit --json`
+- **pnpm:** `pnpm audit --json`
+- **yarn v1:** `yarn audit --json`
+- **yarn v2+:** `yarn npm audit --json`
+- **bun:** bun has no built-in audit; run `npm install --package-lock-only` then `npm audit --json`
+
+These are narrower than cdxgen (single ecosystem, no SBOM) but can catch advisories cdxgen misses. Use both when thoroughness matters.
 
 ### 4. Reachability Analysis (Enterprise Only)
 
 For enterprise customers, run Tier 1 reachability analysis to determine whether vulnerabilities are actually reachable in the project's code:
 
 ```
-socket scan reach --org <org-slug> .
+npx socket scan reach --org <org-slug> .
 ```
 
 This analyzes the project's dependency graph and source code to classify each vulnerability by reachability:
@@ -181,20 +312,7 @@ Based on scan results, cross-reference other skills to resolve issues:
 
 ### 6. License & Compliance Audit
 
-For each dependency in the scan results, collect license information using the Socket Batch PURL API:
-
-```
-curl -X POST https://api.socket.dev/v0/purl \
-  -H "Authorization: Bearer $SOCKET_SECURITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"purls": ["pkg:<ecosystem>/<name>@<version>", ...]}'
-```
-
-1. Query the Batch PURL API for each direct dependency to get its license identifier
-2. Note the license for each package in the dependency tree
-3. Group dependencies by license type
-
-For large dependency trees, prioritize direct dependencies and flag transitive dependencies that use different licenses.
+Scan results already include license issues. Filter the `issues[]` array for types `licenseSpdxDisj` and `mixedLicense` to identify packages with license problems.
 
 Categorize all discovered licenses into risk tiers:
 
@@ -216,60 +334,7 @@ Flag the following issues for user attention:
 
 ### 7. Generate SBOM
 
-Generate an SBOM in one of the standard formats:
-
-#### CycloneDX Format
-
-Create a `bom.json` (CycloneDX 1.5) with this structure:
-
-```json
-{
-  "bomFormat": "CycloneDX",
-  "specVersion": "1.5",
-  "version": 1,
-  "metadata": {
-    "component": {
-      "type": "application",
-      "name": "<project-name>",
-      "version": "<project-version>"
-    }
-  },
-  "components": [
-    {
-      "type": "library",
-      "name": "<package-name>",
-      "version": "<version>",
-      "purl": "pkg:<ecosystem>/<name>@<version>",
-      "licenses": [{ "license": { "id": "<SPDX-id>" } }]
-    }
-  ]
-}
-```
-
-#### SPDX Format
-
-Create an `sbom.spdx.json` (SPDX 2.3) with this structure:
-
-```json
-{
-  "spdxVersion": "SPDX-2.3",
-  "dataLicense": "CC0-1.0",
-  "SPDXID": "SPDXRef-DOCUMENT",
-  "name": "<project-name>",
-  "packages": [
-    {
-      "SPDXID": "SPDXRef-Package-<name>-<version>",
-      "name": "<package-name>",
-      "versionInfo": "<version>",
-      "downloadLocation": "<registry-url>",
-      "licenseConcluded": "<SPDX-id>",
-      "externalRefs": [{ "referenceType": "purl", "referenceLocator": "pkg:<ecosystem>/<name>@<version>" }]
-    }
-  ]
-}
-```
-
-Ask the user which format they prefer. Default to CycloneDX if not specified.
+The Socket CLI does not natively generate SBOMs. To produce one, use scan results to build a CycloneDX 1.5 (`bom.json`) or SPDX 2.3 (`sbom.spdx.json`) document manually. Ask the user which format they prefer; default to CycloneDX.
 
 ### 8. Compliance Summary
 
@@ -288,7 +353,7 @@ Produce a human-readable compliance summary:
 **Issues Found**
 - List each flagged issue from Step 5 with the package name, version, and recommended action
 
-**SBOM Generated**
+**SBOM (if generated)**
 - Note the filename and format of the generated SBOM
 
 **Recommendation**
@@ -297,14 +362,12 @@ Produce a human-readable compliance summary:
 
 ## Error Handling
 
-- **`socket: command not found`**: Install the Socket CLI with `npm install -g socket` or use `npx socket` as a prefix. If you need a permanent installation, use the `/socket-setup` skill.
-- **`socket scan create` fails with authentication error**: Run `socket login` or set the `SOCKET_CLI_API_TOKEN` environment variable. For users without an account, run `socket login --public` to activate the built-in public token (limited rate). If already using the public token and hitting rate limits, suggest creating a free account at https://socket.dev.
-- **`socket scan reach` returns "not available"**: Reachability analysis requires an enterprise subscription. Skip this step for free-tier users.
-- **No manifest/lock files found**: The scan relies on manifest files (`package.json`, `requirements.txt`, `go.mod`, etc.). Ensure the `--repo` path points to a directory containing these files.
-- **Scan times out**: Large monorepos with many manifest files may take longer. Try limiting the scan to a specific subdirectory with `--repo ./path/to/subdir`.
-- **Batch PURL API rate-limited**: For large dependency trees, batch requests (the API accepts multiple PURLs per call) and add delays between calls. Focus on direct dependencies first.
+- **`socket: command not found`**: Use `npx socket` as a prefix for all commands. If you prefer a global install, run `npm install -g socket@latest`. If you need a permanent installation, use the `/socket-setup` skill.
+- **`npx socket scan create` fails with 403 / authentication error**: The public demo token cannot create scans. Prompt the user to log in with `npx socket login` or create a free account at https://socket.dev. If they skip login, fall back to cdxgen (`npx @cyclonedx/cdxgen -o bom.json -p`) — see Step 2b — but warn them that alert accuracy will be greatly reduced and SBOM accuracy will be poor. Use the `/socket-setup` skill for guided configuration.
+- **`npx socket scan reach` returns "not available"**: Reachability analysis requires an enterprise subscription. Skip this step for free-tier users.
+- **No manifest/lock files found**: The scan relies on manifest files (`package.json`, `requirements.txt`, `go.mod`, etc.). Ensure the target path points to a directory containing these files. For bun projects, if only `bun.lock` exists, run `npm install --package-lock-only` to generate a `package-lock.json` that Socket can parse.
+- **Scan times out**: Large monorepos with many manifest files may take longer. Try limiting the scan to a specific subdirectory (e.g., `npx socket scan create ./path/to/subdir --tmp --json`).
 - **License not recognized**: If Socket returns an unknown or custom license, note it as "Unknown" and flag for manual review. Include the package's repository URL so the user can check the license file directly.
-- **SBOM generation fails for mixed ecosystems**: Generate separate SBOMs per ecosystem if a single combined SBOM causes issues.
 
 ## Tips
 
@@ -316,10 +379,10 @@ Produce a human-readable compliance summary:
 - Combine with the `/socket-dep-upgrade` skill to fix vulnerabilities discovered during the scan
 - Enterprise customers should use reachability analysis to prioritize fixes — focus on `reachable` vulnerabilities first
 - Persistent scan results are available in the Socket dashboard for team visibility and historical tracking
-- If `socket` is not installed, `npx socket` works as a drop-in replacement for all commands
+- Use `npx socket` for all commands — it always uses the latest CLI version
 - Run a compliance audit before releasing a new version to catch license issues early
-- For enterprise compliance, generate SBOMs in both CycloneDX and SPDX formats
 - Re-audit after adding or updating dependencies — license information can change between versions
 - When flagging GPL dependencies, check if they are dev-only — GPL in devDependencies is generally lower risk for commercial projects
 - Use the `/socket-inspect` skill to deep-dive into specific packages flagged during the audit
-- Scanning works with the public token (`socket login --public`) for users without an account, subject to rate limits. For full-rate access and dashboard features, users need a free account at https://socket.dev
+- If the user is not logged in, always prompt them to log in (`npx socket login`) or create a free account at https://socket.dev before falling back to cdxgen. cdxgen has greatly reduced alert accuracy and poor SBOM accuracy
+- For bun projects without a `package-lock.json`, generate one with `npm install --package-lock-only` before scanning or auditing
